@@ -1,8 +1,67 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../painters/donut_chart_painter.dart';
+import '../services/api_service.dart';
 
-class OccupancyCard extends StatelessWidget {
+class OccupancyCard extends StatefulWidget {
   const OccupancyCard({super.key});
+
+  @override
+  State<OccupancyCard> createState() => _OccupancyCardState();
+}
+
+class _OccupancyCardState extends State<OccupancyCard> {
+  bool _isLoading = true;
+  int _occupied = 0;
+  int _vacant = 0;
+  double _percentage = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchOccupancy();
+  }
+
+  Future<void> _fetchOccupancy() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+
+      final data = await ApiService.fetchRooms(token);
+
+      if (data['success'] == true) {
+        final List rooms = data['data'] ?? [];
+
+        int occupied = 0;
+        int vacant = 0;
+
+        for (final room in rooms) {
+          final status = (room['status'] ?? '').toString().toLowerCase();
+          if (status == 'occupied') {
+            occupied++;
+          } else if (status == 'vacant') {
+            vacant++;
+          }
+        }
+
+        final total = occupied + vacant;
+        final percentage = total > 0 ? (occupied / total) * 100 : 0.0;
+
+        if (mounted) {
+          setState(() {
+            _occupied = occupied;
+            _vacant = vacant;
+            _percentage = double.parse(percentage.toStringAsFixed(1));
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,64 +81,69 @@ class OccupancyCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-           Text(
+          Text(
             'Occupancy Rate',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSurface,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 16),
-          Center(
-            child: SizedBox(
-              width: 130,
-              height: 130,
-              child: CustomPaint(
-                painter: DonutChartPainter(
-                  percentage: 77.8,
-                  filledColor: const Color(0xFF4CAF50),
-                  emptyColor: const Color(0xFFE0E0E0),
-                ),
-                child: Center(
-                  child: Text(
-                    '77.8%',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+          if (_isLoading)
+            const Expanded(
+              child: Center(
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else ...[
+            Center(
+              child: SizedBox(
+                width: 130,
+                height: 130,
+                child: CustomPaint(
+                  painter: DonutChartPainter(
+                    percentage: _percentage,
+                    filledColor: const Color(0xFF4CAF50),
+                    emptyColor: const Color(0xFFE0E0E0),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '$_percentage%',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                         color: Theme.of(context).colorScheme.onSurface,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          _buildLegendRow(context,const Color(0xFF4CAF50), '36 Occupied'),
-          const SizedBox(height: 6),
-          _buildLegendRow(context,const Color(0xFFE0E0E0), '12 Vacant'),
+            const SizedBox(height: 16),
+            _buildLegendRow(context, const Color(0xFF4CAF50), '$_occupied Occupied'),
+            const SizedBox(height: 6),
+            _buildLegendRow(context, const Color(0xFFE0E0E0), '$_vacant Vacant'),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildLegendRow(BuildContext context,Color color, String label) {
+  Widget _buildLegendRow(BuildContext context, Color color, String label) {
     return Row(
       children: [
         Container(
           width: 10,
           height: 10,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 6),
         Text(
           label,
-          style:  TextStyle(
+          style: TextStyle(
             fontSize: 12,
-              color: Theme.of(context).colorScheme.onSurface,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ],
