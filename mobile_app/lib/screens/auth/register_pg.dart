@@ -228,6 +228,7 @@ class _RegisterPGState extends State<RegisterPG> {
               const SizedBox(height: 12),
               TextField(
                 controller: pgNameController,
+                style: const TextStyle(color: Colors.white),
                 decoration: _inputDecoration(
                   hint: "Enter PG Name",
                   icon: Icons.home_outlined,
@@ -236,6 +237,7 @@ class _RegisterPGState extends State<RegisterPG> {
               const SizedBox(height: 12),
               TextField(
                 controller: registerNoController,
+                style: const TextStyle(color: Colors.white),
                 decoration: _inputDecoration(
                   hint: "Enter Registration No",
                   icon: Icons.badge_outlined,
@@ -244,6 +246,7 @@ class _RegisterPGState extends State<RegisterPG> {
               const SizedBox(height: 12),
               TextField(
                 controller: addressController,
+                style: const TextStyle(color: Colors.white),
                 decoration: _inputDecoration(
                   hint: "Enter Address",
                   icon: Icons.location_on_outlined,
@@ -252,6 +255,7 @@ class _RegisterPGState extends State<RegisterPG> {
               const SizedBox(height: 12),
               TextField(
                 controller: cityController,
+                style: const TextStyle(color: Colors.white),
                 decoration: _inputDecoration(
                   hint: "Enter City",
                   icon: Icons.location_city_outlined,
@@ -271,6 +275,7 @@ class _RegisterPGState extends State<RegisterPG> {
               const SizedBox(height: 12),
               TextField(
                 controller: ownerNameController,
+                style: const TextStyle(color: Colors.white),
                 decoration: _inputDecoration(
                   hint: "Enter owner name",
                   icon: Icons.person_outline,
@@ -279,6 +284,7 @@ class _RegisterPGState extends State<RegisterPG> {
               const SizedBox(height: 12),
               TextField(
                 controller: emailController,
+                style: const TextStyle(color: Colors.white),
                 decoration: _inputDecoration(
                   hint: "Enter email",
                   icon: Icons.email_outlined,
@@ -316,6 +322,7 @@ class _RegisterPGState extends State<RegisterPG> {
               TextField(
                 controller: passwordController,
                 obscureText: obscurePassword,
+                style: const TextStyle(color: Colors.white),
                 decoration: _inputDecoration(
                   hint: "Enter password",
                   icon: Icons.lock_outline,
@@ -341,6 +348,7 @@ class _RegisterPGState extends State<RegisterPG> {
               TextField(
                 controller: confirmPasswordController,
                 obscureText: obscureConfirmPassword,
+                style: const TextStyle(color: Colors.white),
                 decoration: _inputDecoration(
                   hint: "Enter confirm password",
                   icon: Icons.lock_outline,

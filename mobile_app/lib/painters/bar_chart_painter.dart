@@ -4,32 +4,38 @@ class BarChartPainter extends CustomPainter {
   final List<int> data;
   final List<Color> colors;
   final List<String> labels;
+  final Color textColor;
+  final Color gridColor;
 
   BarChartPainter({
     required this.data,
     required this.colors,
     required this.labels,
+    this.textColor = const Color(0xFF9E9E9E),
+    this.gridColor = const Color(0xFFEEEEEE),
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    const maxValue = 8;
+    final maxValue = (data.reduce((a, b) => a > b ? a : b) * 1.3).ceilToDouble();
     const labelHeight = 22.0;
-    const topPadding = 16.0;
+    const topPadding = 28.0;
     const leftPadding = 22.0;
-    const rightPadding = 4.0;
+    const rightPadding = 16.0;
 
     final chartWidth = size.width - leftPadding - rightPadding;
     final chartHeight = size.height - labelHeight - topPadding;
 
     final gridPaint = Paint()
-      ..color = const Color(0xFFEEEEEE)
+      ..color = gridColor
       ..strokeWidth = 1;
 
     final textPainter = TextPainter(textDirection: TextDirection.ltr);
 
     // Grid lines + Y-axis labels
-    for (final val in [0, 2, 4, 6, 8]) {
+    final step = (maxValue / 4).ceilToDouble();
+    for (int i = 0; i <= 4; i++) {
+      final val = (step * i).toInt();
       final y = topPadding + chartHeight * (1 - val / maxValue);
       canvas.drawLine(
         Offset(leftPadding, y),
@@ -38,7 +44,7 @@ class BarChartPainter extends CustomPainter {
       );
       textPainter.text = TextSpan(
         text: val.toString(),
-        style: const TextStyle(color: Color(0xFF9E9E9E), fontSize: 10),
+        style: TextStyle(color: textColor, fontSize: 10),
       );
       textPainter.layout();
       textPainter.paint(canvas, Offset(0, y - textPainter.height / 2));
@@ -46,7 +52,7 @@ class BarChartPainter extends CustomPainter {
 
     // Bars
     final sectionWidth = chartWidth / data.length;
-    final barWidth = sectionWidth * 0.52;
+    final barWidth = sectionWidth * 0.35;
 
     for (int i = 0; i < data.length; i++) {
       final barHeight = chartHeight * data[i] / maxValue;
@@ -63,25 +69,12 @@ class BarChartPainter extends CustomPainter {
         Paint()..color = colors[i],
       );
 
-      // Value on top of bar
-      textPainter.text = TextSpan(
-        text: data[i].toString(),
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-        ),
-      );
-      textPainter.layout();
-      textPainter.paint(
-        canvas,
-        Offset(x + barWidth / 2 - textPainter.width / 2, y + 5),
-      );
+      
 
       // X-axis label
       textPainter.text = TextSpan(
         text: labels[i],
-        style: const TextStyle(color: Color(0xFF757575), fontSize: 11),
+        style: TextStyle(color: textColor, fontSize: 11),
       );
       textPainter.layout();
       textPainter.paint(
@@ -95,5 +88,5 @@ class BarChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

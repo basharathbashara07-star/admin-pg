@@ -182,8 +182,8 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 8),
-                  const Text('Maintenance',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1A1A2E))),
+                  Text('Maintenance',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
                   const Text('All complaints & requests',
                       style: TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
                   const SizedBox(height: 16),
@@ -241,7 +241,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                   Container(
                     height: 42,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
                     ),
@@ -270,7 +270,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                             margin: const EdgeInsets.only(right: 8),
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             decoration: BoxDecoration(
-                              color: isActive ? const Color(0xFF2196F3) : Colors.white,
+                              color: isActive ? const Color(0xFF2196F3) : Theme.of(context).cardColor,
                               borderRadius: BorderRadius.circular(10),
                               boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)],
                             ),
@@ -330,7 +330,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
       ),
@@ -338,8 +338,12 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
         children: [
           Container(
             width: 36, height: 36,
-            decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(10)),
-            child: Center(child: Text(icon, style: const TextStyle(fontSize: 16))),
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark 
+              ? color.withOpacity(0.2) 
+              : bgColor, 
+              borderRadius: BorderRadius.circular(10)),
+             child: Center(child: Text(icon, style: const TextStyle(fontSize: 16))),
           ),
           const SizedBox(width: 10),
           Column(

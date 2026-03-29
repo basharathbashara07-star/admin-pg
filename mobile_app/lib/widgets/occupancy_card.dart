@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 import '../painters/donut_chart_painter.dart';
 import '../services/api_service.dart';
 
@@ -15,54 +16,47 @@ class _OccupancyCardState extends State<OccupancyCard> {
   int _occupied = 0;
   int _vacant = 0;
   double _percentage = 0.0;
+  late Timer _timer;
 
   @override
   void initState() {
     super.initState();
     _fetchOccupancy();
+    _timer = Timer.periodic(const Duration(seconds: 30), (_) {
+    _fetchOccupancy();
+  });
   }
 
   Future<void> _fetchOccupancy() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token') ?? '';
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
 
-      final data = await ApiService.fetchRooms(token);
+    final data = await ApiService.fetchOccupancySummary(token);
 
-      if (data['success'] == true) {
-        final List rooms = data['data'] ?? [];
-
-        int occupied = 0;
-        int vacant = 0;
-
-        for (final room in rooms) {
-          final status = (room['status'] ?? '').toString().toLowerCase();
-          if (status == 'occupied') {
-            occupied++;
-          } else if (status == 'vacant') {
-            vacant++;
-          }
-        }
-
-        final total = occupied + vacant;
-        final percentage = total > 0 ? (occupied / total) * 100 : 0.0;
-
-        if (mounted) {
-          setState(() {
-            _occupied = occupied;
-            _vacant = vacant;
-            _percentage = double.parse(percentage.toStringAsFixed(1));
-            _isLoading = false;
-          });
-        }
-      } else {
-        if (mounted) setState(() => _isLoading = false);
+    if (data['success'] == true) {
+      if (mounted) {
+        setState(() {
+          _occupied = data['occupied'];
+          _vacant = data['vacant'];
+          _percentage = data['percentage'].toDouble();
+          _isLoading = false;
+        });
       }
-    } catch (e) {
+    } else {
       if (mounted) setState(() => _isLoading = false);
     }
+  } catch (e) {
+    print('OCCUPANCY ERROR: $e');
+    if (mounted) setState(() => _isLoading = false);
   }
-
+}
+  
+  @override
+  void dispose() {
+  _timer.cancel();
+  super.dispose();
+}
   @override
   Widget build(BuildContext context) {
     return Container(

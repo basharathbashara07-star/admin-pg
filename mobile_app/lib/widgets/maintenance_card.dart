@@ -63,7 +63,7 @@ class MaintenanceCard extends StatelessWidget {
       child: Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -112,10 +112,10 @@ class MaintenanceCard extends StatelessWidget {
                               children: [
                                 Text(
                                   request.tenantName,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1A1A2E),
+                                    color: Theme.of(context).colorScheme.onSurface,
                                   ),
                                 ),
                                 Text(
@@ -152,10 +152,10 @@ class MaintenanceCard extends StatelessWidget {
                       // ── Row 2: Issue title ──
                       Text(
                         request.issueTitle,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A1A2E),
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 6),

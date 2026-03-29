@@ -1,7 +1,7 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const db = require("../../config/db");
-const authenticateAdmin = require("../../../middleware/auth");
+const db = require('../../config/db');
+const authenticateAdmin = require('../../../middleware/auth');
 
 
 // GET /api/admin/rent/summary
@@ -20,29 +20,30 @@ router.get("/summary", authenticateAdmin, (req, res) => {
         AND YEAR(p.payment_date) = YEAR(CURDATE())
         AND MONTH(p.payment_date) = MONTH(CURDATE())
       ), 0) AS collected,
-      COALESCE((
-        SELECT SUM(t.rent_amount)
-        FROM tenants t
-        WHERE t.pg_id = ? AND t.status = 'active'
-        AND NOT EXISTS (
-          SELECT 1 FROM payments p 
-          WHERE p.tenant_id = t.id
-          AND YEAR(p.payment_date) = YEAR(CURDATE())
-          AND MONTH(p.payment_date) = MONTH(CURDATE())
-          AND p.status = 'paid'
-        )
-        AND CURDATE() <= DATE_ADD(
-          DATE_FORMAT(CURDATE(), '%Y-%m-01'),
-          INTERVAL (t.due_day + 4) DAY
-        )
-      ), 0) AS pending,
+
+
+    COALESCE((
+    SELECT SUM(t.rent_amount)
+    FROM tenants t
+    WHERE t.pg_id = ? AND t.status = 'active'
+    AND NOT EXISTS (
+    SELECT 1 FROM payments p 
+    WHERE p.tenant_id = t.id
+    AND YEAR(p.payment_date) = YEAR(CURDATE())
+    AND MONTH(p.payment_date) = MONTH(CURDATE())
+    AND p.status = 'paid'
+   )
+   ), 0) AS pending,
+
+
+
       COALESCE((
         SELECT SUM(p.amount)
         FROM payments p
         JOIN tenants t ON p.tenant_id = t.id
         WHERE t.pg_id = ?
         AND t.status = 'active'
-        AND p.status = 'overdue'
+        AND p.status = 'overdue' 
       ), 0) AS overdue,
       COALESCE((
         SELECT SUM(t.rent_amount)
@@ -65,12 +66,15 @@ router.get("/summary", authenticateAdmin, (req, res) => {
         COUNT(CASE WHEN p.status = 'paid' THEN 1 END) as paid_count,
         COUNT(CASE WHEN p.status IS NULL AND CURDATE() <= DATE_ADD(
           DATE_FORMAT(CURDATE(), '%Y-%m-01'),
-          INTERVAL (t.due_day + 4) DAY
+          INTERVAL t.due_day DAY
         ) THEN 1 END) as due_count,
-        COUNT(CASE WHEN p.status IS NULL AND CURDATE() > DATE_ADD(
-          DATE_FORMAT(CURDATE(), '%Y-%m-01'),
-          INTERVAL (t.due_day + 4) DAY
-        ) THEN 1 END) as overdue_count
+        COUNT(CASE WHEN 
+        (p.status = 'overdue') OR
+        (p.status IS NULL AND CURDATE() > DATE_ADD(
+        DATE_FORMAT(CURDATE(), '%Y-%m-01'),
+        INTERVAL t.due_day DAY
+       ))
+       THEN 1 END) as overdue_count
       FROM tenants t
       LEFT JOIN payments p 
         ON t.id = p.tenant_id

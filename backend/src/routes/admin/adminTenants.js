@@ -33,7 +33,7 @@ router.get("/tenants", authenticateAdmin, (req, res) => {
             WHEN p.status = 'paid' THEN 'paid'
             WHEN p.status IS NULL AND CURDATE() > DATE_ADD(
                 DATE_FORMAT(CURDATE(), '%Y-%m-01'), 
-                INTERVAL (t.due_day + 4) DAY
+                INTERVAL t.due_day DAY
             ) THEN 'overdue'
             ELSE 'due'
         END AS payment_status,
@@ -126,7 +126,7 @@ router.get("/tenants/:id", authenticateAdmin, (req, res) => {
             WHEN p.status = 'paid' THEN 'paid'
             WHEN p.status IS NULL AND CURDATE() > DATE_ADD(
                 DATE_FORMAT(CURDATE(), '%Y-%m-01'), 
-                INTERVAL (t.due_day + 4) DAY
+                INTERVAL t.due_day DAY
             ) THEN 'overdue'
             ELSE 'due'
         END AS payment_status
@@ -462,9 +462,17 @@ router.get("/dashboard/summary", authenticateAdmin, (req, res) => {
     SELECT
       (SELECT COUNT(*) FROM tenants WHERE pg_id = ? AND status = 'active') AS total_residents,
       (SELECT COUNT(*) FROM rooms WHERE pg_id = ? AND status = 'available') AS vacant_rooms,
-      (SELECT COALESCE(SUM(amount), 0) FROM payments p 
-        JOIN tenants t ON p.tenant_id = t.id 
-        WHERE t.pg_id = ? AND p.status = 'pending') AS pending_rent,
+      (SELECT COALESCE(SUM(t.rent_amount), 0) 
+        FROM tenants t
+        WHERE t.pg_id = ? 
+        AND t.status = 'active'
+        AND t.id NOT IN (
+          SELECT tenant_id FROM payments
+          WHERE MONTH(payment_date) = MONTH(CURDATE())
+          AND YEAR(payment_date) = YEAR(CURDATE())
+          AND status = 'paid'
+        )
+      ) AS pending_rent,
       (SELECT COUNT(*) FROM complaints c
         JOIN tenants t ON c.tenant_id = t.id
         WHERE t.pg_id = ? AND c.status = 'open') AS open_tickets
@@ -475,5 +483,5 @@ router.get("/dashboard/summary", authenticateAdmin, (req, res) => {
     return res.json({ success: true, data: results[0] });
   });
 });
-                              
+                   
 module.exports = router;

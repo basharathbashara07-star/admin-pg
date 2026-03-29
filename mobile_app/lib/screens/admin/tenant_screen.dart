@@ -6,6 +6,7 @@ import '../../widgets/add_tenant_dialog.dart';
 import '../../widgets/tenant_action_sheet.dart';
 import '../../services/api_service.dart';
 import 'tenant_detail_screen.dart';
+import 'dart:async';
 import '../../widgets/record_payment_sheet.dart';
 import '../../widgets/edit_tenant_dialog.dart';
 
@@ -26,6 +27,7 @@ class _TenantScreenState extends State<TenantScreen> {
   int _activeCount = 0;
   int _vacatedCount = 0;
   int _pendingCount = 0;
+  late Timer _timer;
 
 
   @override
@@ -34,7 +36,17 @@ class _TenantScreenState extends State<TenantScreen> {
     _fetchTenants();
     _fetchRooms();
     _fetchCounts();
+    _timer = Timer.periodic(const Duration(seconds: 30), (_) {
+    _fetchTenants();
+    _fetchCounts();
+  });
   }
+
+  @override
+  void dispose() {
+  _timer.cancel();
+  super.dispose();
+ }
 
   Future<void> _fetchTenants() async {
     try {

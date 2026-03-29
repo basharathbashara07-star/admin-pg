@@ -1,7 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../config/db");
+const db = require("../../config/db");
 const nodemailer = require("nodemailer");
+const tenantAuth = require("../../../middleware/tenantAuth");
 
 // Generate random 6-digit OTP
 function generateOTP() {
@@ -137,5 +138,84 @@ router.post("/reset-password", async (req, res) => {
     return res.status(500).json({ message: "Server error", err });
   }
 });
+
+
+// POST /api/tenant/login
+router.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ success: false, message: "Email and password are required" });
+  }
+
+  const query = "SELECT * FROM tenants WHERE email = ?";
+  db.query(query, [email], async (err, results) => {
+    if (err) return res.status(500).json({ success: false, message: "DB error" });
+
+    if (results.length === 0) {
+      return res.status(400).json({ success: false, message: "Tenant not found" });
+    }
+
+    const tenant = results[0];
+    const isMatch = await bcrypt.compare(password, tenant.password);
+
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: "Invalid password" });
+    }
+
+    const jwt = require("jsonwebtoken");
+    const token = jwt.sign(
+      { id: tenant.id, email: tenant.email, pg_id: tenant.pg_id },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    return res.json({
+      success: true,
+      message: "Login successful",
+      token,
+      tenant_id: tenant.id,
+      name: tenant.name,
+      email: tenant.email,
+      phone: tenant.phone,
+      pg_id: tenant.pg_id,
+      room_id: tenant.room_id,
+    });
+  });
+});
+
+// GET /api/tenant/me
+router.get("/me", tenantAuth, (req, res) => {
+  const sql = `
+    SELECT t.id, t.name, t.email, t.phone,
+           t.father_name, t.father_phone,
+           t.mother_name, t.mother_phone,
+           t.check_in_date, t.check_out_date,
+           t.rent_amount, t.due_day,
+           r.room_no, p.pg_name, p.address
+    FROM tenants t
+    LEFT JOIN rooms r ON r.id = t.room_id
+    LEFT JOIN pgs p ON p.id = t.pg_id
+    WHERE t.id = ?`;
+
+  db.query(sql, [req.tenant.id], (err, rows) => {
+    if (err) {
+      console.error('getMe error:', err);
+      return res.status(500).json({ success: false, message: 'Server error' });
+    }
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Tenant not found.' });
+    }
+    return res.status(200).json({ success: true, data: rows[0] });
+  });
+});
+
+router.post("/logout", (req, res) => {
+  return res.json({
+    success: true,
+    message: "Logged out successfully",
+  });
+});
+
 
 module.exports = router;

@@ -335,6 +335,7 @@ router.post("/login", async (req, res) => {
           phone: admin.phone,
           pg_name: pg.pg_name ?? '',
           address: pg.address ?? '',
+          city: pg.city ?? '',
         });
       });
     });

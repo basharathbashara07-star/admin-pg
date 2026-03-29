@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = 'http://192.168.1.6:5000';
+  static const String baseUrl = 'http://192.168.1.7:5000';
 
   // Login function (existing)
   static Future<Map<String, dynamic>> login(
@@ -553,6 +553,161 @@ static Future<Map<String, dynamic>> fetchDashboardSummary(String token) async {
   final response = await http.get(
     Uri.parse('$baseUrl/api/admin/dashboard/summary'),
     headers: {'Authorization': 'Bearer $token'},
+  );
+  return jsonDecode(response.body);
+}
+
+// ✅ Fetch Occupancy Summary
+static Future<Map<String, dynamic>> fetchOccupancySummary(String token) async {
+  final response = await http.get(
+    Uri.parse('$baseUrl/api/admin/rooms/occupancy-summary'),
+    headers: {'Authorization': 'Bearer $token'},
+  );
+  return jsonDecode(response.body);
+}
+
+
+// ✅ Update Profile
+static Future<Map<String, dynamic>> updateProfile(
+  String token,
+  String name,
+  String email,
+  String phone,
+  String pgName,
+  String address,
+) async {
+  final response = await http.put(
+    Uri.parse('$baseUrl/api/admin/profile/update'),
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    },
+    body: jsonEncode({
+      'name': name,
+      'email': email,
+      'phone': phone,
+      'pg_name': pgName,
+      'address': address,
+    }),
+  );
+  return jsonDecode(response.body);
+}
+
+// ✅ Change Password
+static Future<Map<String, dynamic>> changePassword(
+  String token,
+  String currentPassword,
+  String newPassword,
+) async {
+  final response = await http.put(
+    Uri.parse('$baseUrl/api/admin/profile/change-password'),
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    },
+    body: jsonEncode({
+      'current_password': currentPassword,
+      'new_password': newPassword,
+    }),
+  );
+  return jsonDecode(response.body);
+}
+
+// ✅ Fetch Chat Tenants
+static Future<Map<String, dynamic>> fetchChatTenants(String token) async {
+  final response = await http.get(
+    Uri.parse('$baseUrl/api/admin/chat/tenants'),
+    headers: {'Authorization': 'Bearer $token'},
+  );
+  return jsonDecode(response.body);
+}
+
+// ✅ Fetch Messages
+static Future<Map<String, dynamic>> fetchMessages(String token, String tenantId) async {
+  final response = await http.get(
+    Uri.parse('$baseUrl/api/admin/chat/messages/$tenantId'),
+    headers: {'Authorization': 'Bearer $token'},
+  );
+  return jsonDecode(response.body);
+}
+
+// ✅ Send Message
+static Future<Map<String, dynamic>> sendMessage(String token, int tenantId, String message) async {
+  final response = await http.post(
+    Uri.parse('$baseUrl/api/admin/chat/send'),
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    },
+    body: jsonEncode({'tenant_id': tenantId, 'message': message}),
+  );
+  return jsonDecode(response.body);
+}
+
+// ✅ Fetch All Rooms Floor Wise
+static Future<Map<String, dynamic>> fetchAllRooms(String token) async {
+  final response = await http.get(
+    Uri.parse('$baseUrl/api/admin/rooms/all'),
+    headers: {'Authorization': 'Bearer $token'},
+  );
+  return jsonDecode(response.body);
+}
+
+// ✅ Add Room
+static Future<Map<String, dynamic>> addRoom(
+  String token,
+  String roomNo,
+  String floor,
+  String bed,
+  int capacity,
+  double rentAmount,
+) async {
+  final response = await http.post(
+    Uri.parse('$baseUrl/api/admin/rooms/add'),
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    },
+    body: jsonEncode({
+      'room_no': roomNo,
+      'floor': floor,
+      'bed': bed,
+      'capacity': capacity,
+      'rent_amount': rentAmount,
+    }),
+  );
+  return jsonDecode(response.body);
+}
+
+// ✅ Delete Room
+static Future<Map<String, dynamic>> deleteRoom(String token, String roomId) async {
+  final response = await http.delete(
+    Uri.parse('$baseUrl/api/admin/rooms/$roomId'),
+    headers: {'Authorization': 'Bearer $token'},
+  );
+  return jsonDecode(response.body);
+}
+
+
+// ✅ Fetch Visitors
+static Future<Map<String, dynamic>> fetchVisitors(String token) async {
+  final response = await http.get(
+    Uri.parse('$baseUrl/api/admin/visitors'),
+    headers: {'Authorization': 'Bearer $token'},
+  );
+  return jsonDecode(response.body);
+}
+
+// ✅ Update Visitor Status
+static Future<Map<String, dynamic>> updateVisitorStatus(
+    String token, String visitorId, String status) async {
+  final response = await http.put(
+    Uri.parse('$baseUrl/api/admin/visitors/$visitorId'),
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    },
+    body: jsonEncode({'status': status}),
   );
   return jsonDecode(response.body);
 }

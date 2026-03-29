@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../services/api_service.dart';
+import '../../utils/phone_validator.dart';
 class EditProfileScreen extends StatefulWidget {
   final String name;
   final String email;
   final String phone;
   final String pgName;
   final String address;
-  final String pgContact;
 
   const EditProfileScreen({
     super.key,
@@ -15,7 +16,6 @@ class EditProfileScreen extends StatefulWidget {
     required this.phone,
     required this.pgName,
     required this.address,
-    required this.pgContact,
   });
 
   @override
@@ -28,7 +28,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _phoneCtrl;
   late final TextEditingController _pgNameCtrl;
   late final TextEditingController _addressCtrl;
-  late final TextEditingController _pgContactCtrl;
 
   bool _hasChanges = false;
 
@@ -40,7 +39,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _phoneCtrl     = TextEditingController(text: widget.phone);
     _pgNameCtrl    = TextEditingController(text: widget.pgName);
     _addressCtrl   = TextEditingController(text: widget.address);
-    _pgContactCtrl = TextEditingController(text: widget.pgContact);
 
     // Track changes
     for (final c in _allControllers) {
@@ -50,7 +48,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   List<TextEditingController> get _allControllers => [
         _nameCtrl, _emailCtrl, _phoneCtrl,
-        _pgNameCtrl, _addressCtrl, _pgContactCtrl,
+        _pgNameCtrl, _addressCtrl,
       ];
 
   @override
@@ -59,38 +57,59 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
-  void _save() {
-    // Basic validation
-    if (_nameCtrl.text.trim().isEmpty) {
-      _showSnack('Name cannot be empty', isError: true);
-      return;
-    }
-    if (!_emailCtrl.text.contains('@')) {
-      _showSnack('Please enter a valid email', isError: true);
-      return;
-    }
-    if (_phoneCtrl.text.trim().length < 10) {
-      _showSnack('Please enter a valid phone number', isError: true);
-      return;
-    }
-
-    // Return updated data to profile screen
-    Navigator.pop(context, {
-      'name':      _nameCtrl.text.trim(),
-      'email':     _emailCtrl.text.trim(),
-      'phone':     _phoneCtrl.text.trim(),
-      'pgName':    _pgNameCtrl.text.trim(),
-      'address':   _addressCtrl.text.trim(),
-      'pgContact': _pgContactCtrl.text.trim(),
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Profile updated successfully!'),
-        backgroundColor: Color(0xFF4CAF50),
-      ),
-    );
+  Future<void> _save() async {
+  if (_nameCtrl.text.trim().isEmpty) {
+    _showSnack('Name cannot be empty', isError: true);
+    return;
   }
+  if (!_emailCtrl.text.contains('@')) {
+    _showSnack('Please enter a valid email', isError: true);
+    return;
+  }
+  final phoneError = PhoneValidator.validate(_phoneCtrl.text.trim());
+  if (phoneError != null) {
+  _showSnack(phoneError, isError: true);
+  return;
+ }
+
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
+
+    final result = await ApiService.updateProfile(
+      token,
+      _nameCtrl.text.trim(),
+      _emailCtrl.text.trim(),
+      _phoneCtrl.text.trim(),
+      _pgNameCtrl.text.trim(),
+      _addressCtrl.text.trim(),
+    );
+
+    if (result['success'] == true) {
+      await prefs.setString('name', _nameCtrl.text.trim());
+      await prefs.setString('email', _emailCtrl.text.trim());
+      await prefs.setString('phone', _phoneCtrl.text.trim());
+      await prefs.setString('pg_name', _pgNameCtrl.text.trim());
+      await prefs.setString('pg_address', _addressCtrl.text.trim());
+
+      if (mounted) {
+        Navigator.pop(context, {
+          'name':    _nameCtrl.text.trim(),
+          'email':   _emailCtrl.text.trim(),
+          'phone':   _phoneCtrl.text.trim(),
+          'pgName':  _pgNameCtrl.text.trim(),
+          'address': _addressCtrl.text.trim(),
+        });
+        _showSnack('Profile updated successfully!');
+      }
+    } else {
+      _showSnack(result['message'] ?? 'Update failed', isError: true);
+    }
+  } catch (e) {
+    print('SAVE ERROR: $e');
+    _showSnack('Server error', isError: true);
+  }
+}
 
   void _showSnack(String msg, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -267,6 +286,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     controller: _phoneCtrl,
                     hint: 'Enter your phone number',
                     keyboard: TextInputType.phone,
+                    maxLength: 10,
                   ),
                 ],
               ),
@@ -293,14 +313,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     hint: 'Enter full address',
                     maxLines: 2,
                   ),
-                  _divider(),
-                  _editField(
-                    icon: '📞',
-                    label: 'PG Contact',
-                    controller: _pgContactCtrl,
-                    hint: 'Enter PG contact number',
-                    keyboard: TextInputType.phone,
-                  ),
+                  
                 ],
               ),
             ),
@@ -371,6 +384,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     required String hint,
     TextInputType keyboard = TextInputType.text,
     int maxLines = 1,
+    int? maxLength,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -400,6 +414,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   controller: controller,
                   keyboardType: keyboard,
                   maxLines: maxLines,
+                  maxLength: maxLength,
                   style: const TextStyle(
                     fontSize: 13,
                     color: Color(0xFF1A1A2E),

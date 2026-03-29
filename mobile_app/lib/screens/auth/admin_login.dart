@@ -35,7 +35,7 @@ class _AdminLoginState extends State<AdminLogin> {
 
   try {
     final response = await http.post(
-      Uri.parse("http://192.168.1.6:5000/api/admin/login"),
+      Uri.parse("http://192.168.1.7:5000/api/admin/login"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         "email": email,
@@ -56,6 +56,9 @@ class _AdminLoginState extends State<AdminLogin> {
       await prefs.setString('phone', data['phone'] ?? '');
       await prefs.setString('pg_name', data['pg_name'] ?? '');
       await prefs.setString('pg_address', data['address'] ?? '');
+      await prefs.setString('city', data['city'] ?? '');
+      
+
 
       print("TOKEN SAVED: ${data['token']}");
       print("Admin ID: ${data["admin_id"]}");

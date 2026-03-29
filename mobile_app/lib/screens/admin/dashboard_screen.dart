@@ -8,7 +8,10 @@ import '../../widgets/bottom_nav_bar.dart';
 import 'tenant_screen.dart';
 import 'rent_screen.dart';
 import 'maintenance_screen.dart';
+import 'chat_list_screen.dart';
+import 'room_details_screen.dart';
 import 'profile_screen.dart';
+import 'visitor_screen.dart';
 import '../../services/api_service.dart';
 import '../../main.dart';
 import 'dart:async';
@@ -34,7 +37,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _loadAdminInfo();
-    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
+    _timer = Timer.periodic(const Duration(seconds: 30), (_) {
       _fetchDashboardData();
     });
   }
@@ -292,37 +295,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 20),
 
           // ── Quick Actions ──
-          const Text(
+          Text(
             'Quick Actions',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1A1A2E),
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(child: _quickAction(Icons.meeting_room_rounded, 'Room\nDetails', const Color(0xFF2196F3), const Color(0xFFE3F2FD), () {})),
-              const SizedBox(width: 12),
-              Expanded(child: _quickAction(Icons.people_alt_rounded, 'Visitor\nRequests', const Color(0xFF9C27B0), const Color(0xFFF3E5F5), () {})),
-              const SizedBox(width: 12),
-              Expanded(child: _quickAction(Icons.chat_rounded, 'Chat\n', const Color(0xFF00BCD4), const Color(0xFFE0F7FA), () {})),
-            ],
-          ),
-          const SizedBox(height: 20),
+
+         Row(
+        children: [
+       Expanded(child: _quickAction(Icons.meeting_room_rounded, 'Room\nDetails', const Color(0xFF2196F3), const Color(0xFFE3F2FD), () {
+       Navigator.push(context, MaterialPageRoute(builder: (_) => const RoomDetailsScreen()));
+       })),
+       const SizedBox(width: 12),
+       Expanded(child: _quickAction(Icons.people_alt_rounded, 'Visitor\nRequests', const Color(0xFF9C27B0), const Color(0xFFF3E5F5), () {
+       Navigator.push(context, MaterialPageRoute(builder: (_) => const VisitorScreen()));
+      })),      
+       const SizedBox(width: 12),
+       Expanded(child: _quickAction(Icons.chat_rounded, 'Chat\n', const Color(0xFF00BCD4), const Color(0xFFE0F7FA), () {
+       Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatListScreen()));
+      })),
+    ],
+  ),
+  const SizedBox(height: 20),
 
           // ── Charts ──
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: const [
-                Expanded(child: OccupancyCard()),
-                SizedBox(width: 12),
-                Expanded(child: RentStatusCard()),
-              ],
-            ),
-          ),
+          SizedBox(
+        height: 280,
+        child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+        Expanded(child: OccupancyCard()),
+        SizedBox(width: 12),
+        Expanded(child: RentStatusCard()),
+     ],
+   ),
+),
           const SizedBox(height: 20),
 
           // ── Recent Activity ──
@@ -339,7 +350,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
         ),
@@ -361,10 +372,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               label,
               textAlign: TextAlign.center,
               maxLines: 2,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1A1A2E),
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],
