@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -7,6 +6,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/tenant/tenant_common_widgets.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:mobile_app/config/api_config.dart';
+import 'dart:async';
 
 
 class ChatScreen extends StatefulWidget {
@@ -148,13 +148,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   IO.Socket? _socket;
   bool _loading = true;
   int? _myId;
+  late Timer _timer;
+  
 
   @override
   void initState() {
     super.initState();
     _getMyId();
     _fetchMessages();
-    _connectSocket();
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) => _fetchMessages());
   }
 
   void _getMyId() {
@@ -169,7 +171,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     try {
       final res = await http.get(
         Uri.parse('${ApiConfig.baseUrl}/chat/messages/${widget.receiverId}?type=${widget.receiverType}'),
-        headers: {'Authorization': 'Bearer_${widget.token}'},
+       headers: {'Authorization': 'Bearer ${widget.token}'},
       );
       if (res.statusCode == 200) {
         setState(() {
@@ -214,13 +216,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _socket!.on('disconnect', (_) => debugPrint('Socket disconnected'));
   }
 
-  void _sendMessage() {
+  Future<void> _sendMessage() async {
     final text = _msgController.text.trim();
     if (text.isEmpty) return;
 
     // Optimistic UI
     final tempMsg = {
-      '_temp': true,
       'sender_id': _myId,
       'sender_type': 'tenant',
       'receiver_id': widget.receiverId,
@@ -231,14 +232,27 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _msgController.clear();
     _scrollToBottom();
 
-    // Send via socket
-    _socket?.emit('send_message', {
-      'receiver_id': widget.receiverId,
-      'receiver_type': widget.receiverType,
-      'message': text,
-    });
+    // Save to database via HTTP POST
+    try {
+      await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/chat/messages'),
+        headers: {
+          'Authorization': 'Bearer ${widget.token}',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'receiver_id': widget.receiverId,
+          'receiver_type': widget.receiverType,
+          'message': text,
+        }),
+      );
+      await _fetchMessages();
+    }     
+    catch (e) {
+      debugPrint('sendMessage error: $e');
+    }
   }
-
+  
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -253,6 +267,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   @override
   void dispose() {
+    _timer.cancel();
     _socket?.disconnect();
     _msgController.dispose();
     _scrollController.dispose();

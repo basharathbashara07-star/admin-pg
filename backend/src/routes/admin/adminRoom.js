@@ -119,16 +119,18 @@ router.get("/all", authenticateAdmin, (req, res) => {
 });
 
 // POST /api/admin/rooms/add - Add a new room
+// POST /api/admin/rooms/add - Add a new room
 router.post("/add", authenticateAdmin, (req, res) => {
   const pgId = req.admin.pg_id;
-  const { room_no, floor, bed, capacity } = req.body;
+  const { room_no, floor, bed, capacity, rent_amount } = req.body;
+  console.log('ADD ROOM BODY:', req.body);
 
   const query = `
-    INSERT INTO rooms (pg_id, room_no, floor, bed, capacity)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO rooms (pg_id, room_no, floor, bed, capacity, rent_amount)
+    VALUES (?, ?, ?, ?, ?, ?)
   `;
 
-  db.query(query, [pgId, room_no, floor, bed, capacity], (err, result) => {
+  db.query(query, [pgId, room_no, floor, bed, capacity, rent_amount || 0], (err, result) => {
     if (err) return res.status(500).json({ success: false, message: "DB error" });
     return res.json({ success: true, message: "Room added successfully", room_id: result.insertId });
   });

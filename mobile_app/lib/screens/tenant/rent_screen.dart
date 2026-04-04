@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/tenant/tenant_common_widgets.dart';
 import '../../config/api_config.dart';
-
+import '../../utils/receipt_pdf.dart';
 class RentScreen extends StatefulWidget {
   const RentScreen({super.key});
   @override
@@ -914,6 +914,7 @@ String _token = '';
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary),
             onPressed: () {
               Navigator.pop(context);
+              ReceiptPdf.fetchAndGenerate(context: context, token: _token, paymentId: payment['id']);
             },
             child: const Text('Download PDF', style: TextStyle(color: Colors.white)),
           ),

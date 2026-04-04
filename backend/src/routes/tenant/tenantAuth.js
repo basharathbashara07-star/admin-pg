@@ -165,8 +165,8 @@ router.post("/login", async (req, res) => {
 
     const jwt = require("jsonwebtoken");
     const token = jwt.sign(
-      { id: tenant.id, email: tenant.email, pg_id: tenant.pg_id },
-      process.env.JWT_SECRET,
+      { id: tenant.id, email: tenant.email, pg_id: tenant.pg_id, room_id: tenant.room_id },
+  process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 

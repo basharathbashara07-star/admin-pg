@@ -2,6 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'tenant_models.dart';
+import 'package:http/http.dart' as http;
+import '../config/api_config.dart';
+import 'package:mobile_app/main.dart';
 
 class AppState extends ChangeNotifier {
   bool isDarkMode = false;
@@ -17,40 +20,37 @@ class AppState extends ChangeNotifier {
 
   Tenant get tenant => _tenant;
 
-  // Load tenant info from saved JWT token
   Future<void> loadTenantFromToken() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+    final token = prefs.getString('tenant_token');
+    print('TENANT TOKEN: $token');
     if (token == null) return;
 
     try {
-      // JWT is 3 parts split by '.', payload is part index 1
-      final parts = token.split('.');
-      if (parts.length != 3) return;
-
-      // Base64 decode the payload
-      String payload = parts[1];
-      // Pad base64 string if needed
-      while (payload.length % 4 != 0) payload += '=';
-      final decoded = jsonDecode(utf8.decode(base64Url.decode(payload)));
-
-      _tenant = Tenant(
-        name:         decoded['name']     ?? '',
-        room:         decoded['room_no']  ?? '',
-        pgName:       decoded['pg_name']  ?? '',
-        avatar:       '',
-        rewardPoints: 0,
+      final res = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/me'),
+        headers: {'Authorization': 'Bearer $token'},
       );
-      notifyListeners();
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body)['data'];
+        _tenant = Tenant(
+          name: data['name'] ?? '',
+          room: data['room_no'] ?? '',
+          pgName: data['pg_name'] ?? '',
+          avatar: '',
+          rewardPoints: 0,
+        );
+        notifyListeners();
+      }
     } catch (e) {
-      debugPrint('Token decode error: $e');
+      debugPrint('loadTenant error: $e');
     }
   }
 
   // Call this on logout
   Future<void> clearSession() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
+    await prefs.remove('tenant_token');
     _tenant = Tenant(name: '', room: '', pgName: '', avatar: '', rewardPoints: 0);
     notifyListeners();
   }
@@ -65,9 +65,10 @@ class AppState extends ChangeNotifier {
 
   void toggleDarkMode() {
     isDarkMode = !isDarkMode;
+    themeNotifier.value = isDarkMode ? ThemeMode.dark : ThemeMode.light;
     notifyListeners();
   }
-
+  
   void setTab(int index) {
     currentTab = index;
     notifyListeners();

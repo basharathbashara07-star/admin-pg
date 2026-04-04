@@ -27,6 +27,14 @@ class _TenantHomeScreenState extends State<TenantHomeScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AppState>().loadTenantFromToken();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = context.watch<AppState>().isDarkMode;
 

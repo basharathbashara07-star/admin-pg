@@ -46,209 +46,18 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
     }
   }
 
-  void _showAddRoomDialog() {
-  final roomNoCtrl = TextEditingController();
-  final rentCtrl = TextEditingController();
-  final newFloorCtrl = TextEditingController();
-  String selectedFloor = _selectedFloor ?? '';
-  int selectedCapacity= 1;
-  
-
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => StatefulBuilder(
-      builder: (context, setModalState) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Container(
-          padding: const EdgeInsets.only(top: 24, left: 20, right: 20, bottom: 16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text('Add New Room',
-                    style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface)),
-                const SizedBox(height: 20),
-
-                // Room Number
-                _inputField('Room Number', roomNoCtrl, hint: 'e.g. G-101'),
-                const SizedBox(height: 16),
-
-                // Floor
-                Text('Floor', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.withOpacity(0.3)),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: selectedFloor.isEmpty ? null : selectedFloor,
-                      isExpanded: true,
-                      hint: const Text('Select Floor'),
-                      items: [
-                        ...(_floors.map((f) => DropdownMenuItem(
-                              value: f['floor'].toString(),
-                              child: Text(f['floor'].toString()),
-                            ))),
-                        const DropdownMenuItem(value: 'new', child: Text('+ Add New Floor')),
-                      ],
-                      onChanged: (val) => setModalState(() => selectedFloor = val ?? ''),
-                    ),
-                  ),
-                ),
-                if (selectedFloor == 'new') ...[
-                  const SizedBox(height: 12),
-                  _inputField('New Floor Name', newFloorCtrl, hint: 'e.g. Floor 1'),
-                ],
-                const SizedBox(height: 16),
-
-                // Sharing Type
-Text('Sharing Type', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-const SizedBox(height: 8),
-Container(
-  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-  decoration: BoxDecoration(
-    color: Theme.of(context).cardColor,
-    borderRadius: BorderRadius.circular(12),
-    border: Border.all(color: Colors.grey.withOpacity(0.3)),
-  ),
-  child: Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      GestureDetector(
-        onTap: () {
-          if (selectedCapacity > 1) {
-            setModalState(() => selectedCapacity--);
-          }
-        },
-        child: Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: const Color(0xFF2196F3).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(Icons.remove, color: Color(0xFF2196F3), size: 20),
-        ),
-      ),
-      Text(
-        '$selectedCapacity Sharing',
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
-      ),
-      GestureDetector(
-        onTap: () => setModalState(() => selectedCapacity++),
-        child: Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: const Color(0xFF2196F3).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(Icons.add, color: Color(0xFF2196F3), size: 20),
-        ),
-      ),
-    ],
-  ),
-),
-                
-                const SizedBox(height: 16),
-
-                // Rent
-                _inputField('Rent Amount (₹)', rentCtrl, hint: 'e.g. 5000'),
-                const SizedBox(height: 24),
-
-                // Save Button
-                GestureDetector(
-                  onTap: () async {
-                    final floorName = selectedFloor == 'new'
-                        ? newFloorCtrl.text.trim()
-                        : selectedFloor;
-
-                    if (roomNoCtrl.text.trim().isEmpty ||
-                        floorName.isEmpty ||
-                        rentCtrl.text.trim().isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please fill all fields')),
-                      );
-                      return;
-                    }
-                    final result = await ApiService.addRoom(
-                    _token!,
-                    roomNoCtrl.text.trim(),
-                    floorName,
-                    '$selectedCapacity Sharing',
-                    selectedCapacity,
-                    double.tryParse(rentCtrl.text.trim()) ?? 0,
-                   );
-                    if (result['success'] == true) {
-                      Navigator.pop(context);
-                      _fetchRooms();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Room added successfully!'),
-                          backgroundColor: Color(0xFF4CAF50),
-                        ),
-                      );
-                    }
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF1565C0), Color(0xFF2196F3)],
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Center(
-                      child: Text('Add Room',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-            ),
-          ),
-        ),
+  void _showBulkAddScreen() {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => BulkAddRoomScreen(
+        token: _token!,
+        existingFloors: _floors.map((f) => f['floor'].toString()).toList(),
+        onSaved: _fetchRooms,
       ),
     ),
   );
 }
-
 
   @override
   Widget build(BuildContext context) {
@@ -278,7 +87,7 @@ Container(
         centerTitle: true,
         actions: [
           GestureDetector(
-            onTap: _showAddRoomDialog,
+            onTap: _showBulkAddScreen,
             child: Container(
               margin: const EdgeInsets.only(right: 16),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -474,23 +283,15 @@ Container(
               ),
             ),
             const SizedBox(height: 4),
-            Container(
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(2),
-              ),
-              child: FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: capacity > 0 ? occupied / capacity : 0,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: statusColor,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-            ),
+            ClipRRect(
+  borderRadius: BorderRadius.circular(2),
+  child: LinearProgressIndicator(
+    value: capacity > 0 ? (occupied / capacity).clamp(0.0, 1.0) : 0.0,
+    minHeight: 4,
+    backgroundColor: Colors.grey.withOpacity(0.2),
+    valueColor: AlwaysStoppedAnimation<Color>(statusColor),
+  ),
+),
             const SizedBox(height: 10),
             if (tenants.isEmpty)
               Text('No tenants',

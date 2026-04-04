@@ -3,13 +3,14 @@ import 'package:provider/provider.dart';
 import 'screens/common/splash_screen.dart';
 import 'screens/admin/dashboard_screen.dart';
 import 'models/tenant_app_state.dart';
+import 'theme/app_theme.dart';
 
 // ── Global theme notifier ──
 final ValueNotifier<ThemeMode> themeNotifier =
     ValueNotifier(ThemeMode.light);
 
 void main() {
-  runApp(
+  runApp(                                          
     ChangeNotifierProvider(
       create: (_) => AppState(),
       child: const MyApp(),

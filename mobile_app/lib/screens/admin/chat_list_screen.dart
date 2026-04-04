@@ -36,6 +36,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token') ?? '';
       final data = await ApiService.fetchChatTenants(token);
+      
       if (data['success'] == true) {
         setState(() {
           _tenants = data['tenants'] ?? [];
@@ -104,7 +105,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
                       return ListTile(
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 2),
+                            horizontal: 16, vertical: 6),
                         leading: CircleAvatar(
                           radius: 26,
                           backgroundColor: const Color(0xFF2196F3),

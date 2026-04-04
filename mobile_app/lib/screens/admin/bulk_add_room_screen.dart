@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 
-class _BulkAddRoomScreen extends StatefulWidget {
+class BulkAddRoomScreen extends StatefulWidget {
   final String token;
   final List<String> existingFloors;
   final VoidCallback onSaved;
 
-  const _BulkAddRoomScreen({
+  const BulkAddRoomScreen({
     required this.token,
     required this.existingFloors,
     required this.onSaved,
   });
 
   @override
-  State<_BulkAddRoomScreen> createState() => _BulkAddRoomScreenState();
+  State<BulkAddRoomScreen> createState() => _BulkAddRoomScreenState();
 }
 
-class _BulkAddRoomScreenState extends State<_BulkAddRoomScreen> {
+class _BulkAddRoomScreenState extends State<BulkAddRoomScreen> {
   List<String> _floors = [];
   final _newFloorCtrl = TextEditingController();
   String? _selectedFloor;
@@ -86,6 +86,8 @@ class _BulkAddRoomScreenState extends State<_BulkAddRoomScreen> {
     try {
       for (final room in _rooms) {
         final sharing = room['sharing'] as int;
+        print('RENT: ${(room['rentCtrl'] as TextEditingController).text.trim()}');
+        print('PARSED: ${double.tryParse((room['rentCtrl'] as TextEditingController).text.trim())}');
         await ApiService.addRoom(
           widget.token,
           (room['roomNoCtrl'] as TextEditingController).text.trim(),

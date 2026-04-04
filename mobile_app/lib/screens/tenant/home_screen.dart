@@ -14,9 +14,6 @@ import 'visitors_screen.dart';
 import 'chat_screen.dart';
 import 'emergency_screen.dart';
 
-
-
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
   @override
@@ -24,9 +21,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  
  String _token = '';
-
   List<Map<String, dynamic>> _autoAlerts = [];
   List<Map<String, dynamic>> _notices = [];
   bool _loadingNotices = true;

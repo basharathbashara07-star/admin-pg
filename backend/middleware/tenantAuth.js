@@ -13,7 +13,7 @@ const tenantAuth = (req, res, next) => {
     return res.status(401).json({ message: "Token missing" });
   }
 
-  try {
+  try {                                                                                                                                                                                                                                             
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.tenant = decoded;
     next();
@@ -22,4 +22,4 @@ const tenantAuth = (req, res, next) => {
   }
 };
 
-module.exports = tenantAuth;
+module.exports = tenantAuth;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
