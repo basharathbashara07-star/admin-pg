@@ -15,6 +15,8 @@ import 'visitor_screen.dart';
 import '../../services/api_service.dart';
 import '../../main.dart';
 import 'dart:async';
+import 'admin_emergency_screen.dart';
+import 'admin_rewards_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -305,35 +307,97 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 12),
 
-         Row(
-        children: [
-       Expanded(child: _quickAction(Icons.meeting_room_rounded, 'Room\nDetails', const Color(0xFF2196F3), const Color(0xFFE3F2FD), () {
-       Navigator.push(context, MaterialPageRoute(builder: (_) => const RoomDetailsScreen()));
-       })),
-       const SizedBox(width: 12),
-       Expanded(child: _quickAction(Icons.people_alt_rounded, 'Visitor\nRequests', const Color(0xFF9C27B0), const Color(0xFFF3E5F5), () {
-       Navigator.push(context, MaterialPageRoute(builder: (_) => const VisitorScreen()));
-      })),      
-       const SizedBox(width: 12),
-       Expanded(child: _quickAction(Icons.chat_rounded, 'Chat\n', const Color(0xFF00BCD4), const Color(0xFFE0F7FA), () {
-       Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatListScreen()));
-      })),
-    ],
-  ),
-  const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(child: _quickAction(Icons.meeting_room_rounded, 'Room\nDetails', const Color(0xFF2196F3), const Color(0xFFE3F2FD), () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const RoomDetailsScreen()));
+              })),
+              const SizedBox(width: 12),
+              Expanded(child: _quickAction(Icons.people_alt_rounded, 'Visitor\nRequests', const Color(0xFF9C27B0), const Color(0xFFF3E5F5), () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const VisitorScreen()));
+              })),
+              const SizedBox(width: 12),
+              Expanded(child: _quickAction(Icons.chat_rounded, 'Chat\n', const Color(0xFF00BCD4), const Color(0xFFE0F7FA), () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatListScreen()));
+              })),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // ── Emergency Button ──
+          GestureDetector(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminEmergencyScreen())),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEE2E2),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFFCA5A5)),
+                boxShadow: [BoxShadow(color: Colors.red.withOpacity(0.08), blurRadius: 8)],
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.crisis_alert, color: Color(0xFFDC2626), size: 24),
+                  SizedBox(width: 10),
+                  Text(
+                    'Emergency Alerts',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFDC2626),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // ── Rewards Button ──
+          GestureDetector(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminRewardsScreen())),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFBEB),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFFCD34D)),
+                boxShadow: [BoxShadow(color: Colors.amber.withOpacity(0.08), blurRadius: 8)],
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('🏆', style: TextStyle(fontSize: 20)),
+                  SizedBox(width: 10),
+                  Text(
+                    'Tenant Rewards',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFD97706),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
 
           // ── Charts ──
           SizedBox(
-        height: 280,
-        child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-        Expanded(child: OccupancyCard()),
-        SizedBox(width: 12),
-        Expanded(child: RentStatusCard()),
-     ],
-   ),
-),
+            height: 280,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: OccupancyCard()),
+                const SizedBox(width: 12),
+                Expanded(child: RentStatusCard()),
+              ],
+            ),
+          ),
           const SizedBox(height: 20),
 
           // ── Recent Activity ──
