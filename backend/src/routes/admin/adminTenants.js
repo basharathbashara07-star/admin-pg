@@ -7,6 +7,25 @@ const authenticateAdmin = require("../../../middleware/auth");
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 
+// ─── REWARD HELPERS (added) ───────────────────────────────────────────────────
+const awardPoints = (tenantId, points, reason) => {
+  db.query(`UPDATE tenants SET reward_points = reward_points + ? WHERE id = ?`, [points, tenantId], (err) => {
+    if (err) console.error('awardPoints update error:', err);
+  });
+  db.query(`INSERT INTO reward_history (tenant_id, points, reason, type) VALUES (?, ?, ?, 'earned')`, [tenantId, points, reason], (err) => {
+    if (err) console.error('awardPoints history error:', err);
+  });
+};
+
+const checkConsecutiveBonus = (tenantId) => {
+  db.query(`SELECT due_date, payment_date FROM payments WHERE tenant_id = ? AND status = 'paid' ORDER BY due_date DESC LIMIT 3`, [tenantId], (err, rows) => {
+    if (err || rows.length < 3) return;
+    const allOnTime = rows.every(r => new Date(r.payment_date) <= new Date(r.due_date));
+    if (allOnTime) awardPoints(tenantId, 15, '3 consecutive on-time payments bonus');
+  });
+};
+// ─────────────────────────────────────────────────────────────────────────────
+
 // GET /api/admin/tenants → only admin's tenants + current month payment
 router.get("/tenants", authenticateAdmin, (req, res) => {
   const adminId = req.admin.id;
@@ -17,7 +36,6 @@ router.get("/tenants", authenticateAdmin, (req, res) => {
         t.name,
         t.email,
         t.phone,
-        t.gender,
         t.father_name,
         t.father_phone,
         t.mother_name,
@@ -111,7 +129,6 @@ router.get("/tenants/:id", authenticateAdmin, (req, res) => {
         t.name,
         t.email,
         t.phone,
-        t.gender,
         t.father_name,
         t.father_phone,
         t.mother_name,
@@ -275,6 +292,19 @@ router.post("/tenants/payment", authenticateAdmin, async (req, res) => {
         const status = amount >= parseFloat(req.body.total_rent) ? 'paid' : 'pending';
         db.query(updateQuery, [amount, status, payment_date || new Date(), payment_mode, tenant_id, month], (err) => {
           if (err) return res.status(500).json({ success: false, message: "DB error updating payment" });
+
+          // ─── AUTO AWARD POINTS (added) ───
+          if (status === 'paid') {
+            const pd = payment_date ? new Date(payment_date) : new Date();
+            const dd = due_date ? new Date(due_date) : null;
+            const daysEarly = dd ? Math.floor((dd - pd) / (1000 * 60 * 60 * 24)) : 0;
+            const pts = daysEarly >= 5 ? 20 : 10;
+            const reason = daysEarly >= 5 ? 'Rent paid 5+ days early' : 'Rent paid on time';
+            awardPoints(tenant_id, pts, reason);
+            checkConsecutiveBonus(tenant_id);
+          }
+          // ────────────────────────────────
+
           return res.json({ success: true, message: "Payment updated successfully" });
         });
       } else {
@@ -285,6 +315,19 @@ router.post("/tenants/payment", authenticateAdmin, async (req, res) => {
         const status = amount >= parseFloat(req.body.total_rent) ? 'paid' : 'pending';
         db.query(insertQuery, [tenant_id, amount, month, status, payment_date || new Date(), due_date, payment_mode], (err) => {
           if (err) return res.status(500).json({ success: false, message: "DB error inserting payment", err });
+
+          // ─── AUTO AWARD POINTS (added) ───
+          if (status === 'paid') {
+            const pd = payment_date ? new Date(payment_date) : new Date();
+            const dd = due_date ? new Date(due_date) : null;
+            const daysEarly = dd ? Math.floor((dd - pd) / (1000 * 60 * 60 * 24)) : 0;
+            const pts = daysEarly >= 5 ? 20 : 10;
+            const reason = daysEarly >= 5 ? 'Rent paid 5+ days early' : 'Rent paid on time';
+            awardPoints(tenant_id, pts, reason);
+            checkConsecutiveBonus(tenant_id);
+          }
+          // ────────────────────────────────
+
           return res.json({ success: true, message: "Payment recorded successfully" });
         });
       }

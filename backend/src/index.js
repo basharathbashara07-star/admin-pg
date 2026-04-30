@@ -18,6 +18,7 @@ const adminComplaintsRoutes = require('./routes/admin/adminComplaints');
 const adminProfileRoutes = require("./routes/admin/adminProfile");
 const adminChatRoutes = require("./routes/admin/adminChat");
 const adminVisitorsRoutes = require("./routes/admin/adminVisitors");
+const adminRewardsRoutes = require("./routes/admin/adminRewards");
 
 // Tenant routes
 const tenantAuthRoutes = require("./routes/tenant/tenantAuth");
@@ -28,6 +29,8 @@ const tenantRentRoutes = require("./routes/tenant/tenantRent");
 const {router: tenantRewardsRoutes}= require("./routes/tenant/tenantRewards");
 const tenantExpensesRoutes = require("./routes/tenant/tenantExpenses");
 const tenantMaintenanceRoutes = require("./routes/tenant/tenantMaintenance");
+const tenantEmergencyRoutes = require("./routes/tenant/emergencyRoutes");
+const adminEmergencyRoutes = require("./routes/admin/emergencyRoutes");
 // middleware
 app.use(cors());
 app.use(express.json());
@@ -41,6 +44,7 @@ app.use('/api/admin/complaints', adminComplaintsRoutes);
 app.use('/api/admin/profile', adminProfileRoutes);
 app.use('/api/admin/chat',adminChatRoutes);
 app.use('/api/admin/visitors',adminVisitorsRoutes);
+app.use('/api/admin/rewards', adminRewardsRoutes);
 
 
 //TENANT ROUTES
@@ -52,6 +56,8 @@ app.use("/api/tenant/rent", tenantRentRoutes);
 app.use("/api/tenant/rewards", tenantRewardsRoutes);
 app.use("/api/tenant/expenses", tenantExpensesRoutes);
 app.use("/api/tenant/maintenance", tenantMaintenanceRoutes);
+app.use("/api/tenant/emergency", tenantEmergencyRoutes);
+app.use("/api/admin/emergency", adminEmergencyRoutes);
 
 // Cron job - runs every day at midnight
 cron.schedule('* * * * *', () => {

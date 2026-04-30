@@ -35,7 +35,7 @@ class _AdminLoginState extends State<AdminLogin> {
 
   try {
     final response = await http.post(
-      Uri.parse("http://172.16.4.64:5000/api/admin/login"),
+      Uri.parse("http://10.153.157.215:5000/api/admin/login"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         "email": email,

@@ -1,137 +1,121 @@
+// backend/src/routes/tenant/tenantRewards.js
+
 const express = require('express');
 const router = express.Router();
 const db = require('../../config/db');
-const authenticateTenant = require('../../../middleware/tenantAuth');
-
-// Helper — add points (called internally)
-const addPoints = (tenantId, points, reason) => {
-  db.query('UPDATE tenants SET reward_points = reward_points + ? WHERE id = ?', [points, tenantId]);
-  db.query(
-    'INSERT INTO reward_history (tenant_id, points, reason, type) VALUES (?, ?, ?, "earned")',
-    [tenantId, points, reason]
-  );
-};
+const tenantAuth = require('../../../middleware/tenantAuth');
 
 // GET /api/tenant/rewards
-router.get('/', authenticateTenant, (req, res) => {
+router.get('/', tenantAuth, (req, res) => {
   const tenantId = req.tenant.id;
 
-  db.query('SELECT reward_points FROM tenants WHERE id = ?', [tenantId], (err, tenantRows) => {
-    if (err) return res.status(500).json({ success: false, message: 'DB error' });
+  const pointsQuery = `SELECT reward_points FROM tenants WHERE id = ?`;
+  db.query(pointsQuery, [tenantId], (err, tenantRows) => {
+    if (err) return res.status(500).json({ success: false, message: 'Server error' });
+    if (tenantRows.length === 0) return res.status(404).json({ success: false, message: 'Tenant not found' });
 
-    const totalPoints = tenantRows[0]?.reward_points || 0;
+    const totalPoints = tenantRows[0].reward_points || 0;
 
-    db.query(
-      `SELECT * FROM reward_history WHERE tenant_id = ? ORDER BY created_at DESC LIMIT 20`,
-      [tenantId],
-      (err, history) => {
-        if (err) return res.status(500).json({ success: false, message: 'DB error' });
+    const historyQuery = `
+      SELECT points, reason, type, created_at
+      FROM reward_history
+      WHERE tenant_id = ?
+      ORDER BY created_at DESC
+      LIMIT 20
+    `;
+    db.query(historyQuery, [tenantId], (err, history) => {
+      if (err) return res.status(500).json({ success: false, message: 'Server error' });
 
-        const earned = history.filter(r => r.type === 'earned').reduce((s, r) => s + r.points, 0);
-        const redeemed = history.filter(r => r.type === 'redeemed').reduce((s, r) => s + r.points, 0);
+      const earned = history.filter(h => h.type === 'earned').reduce((s, h) => s + h.points, 0);
+      const redeemed = history.filter(h => h.type === 'redeemed').reduce((s, h) => s + h.points, 0);
 
-        db.query(
-          'SELECT status, payment_date, due_date FROM payments WHERE tenant_id = ? ORDER BY created_at DESC',
-          [tenantId],
-          (err, payments) => {
-            if (err) return res.status(500).json({ success: false, message: 'DB error' });
+      const badges = _getBadges(totalPoints, history);
 
-            const totalPaid = payments.filter(p => p.status === 'paid').length;
-            const onTimePaid = payments.filter(p => {
-              if (p.status !== 'paid' || !p.payment_date || !p.due_date) return false;
-              return new Date(p.payment_date) <= new Date(p.due_date);
-            }).length;
-
-            const badges = [
-              {
-                name: 'On-Time Payer',
-                icon: '⭐',
-                description: 'Paid rent on time 3 months in a row',
-                earned: onTimePaid >= 3,
-              },
-              {
-                name: 'Super Tenant',
-                icon: '🏆',
-                description: 'Paid rent on time 6 months in a row',
-                earned: onTimePaid >= 6,
-              },
-              {
-                name: 'Early Bird',
-                icon: '🌅',
-                description: 'Paid rent 5 days before due date',
-                earned: totalPaid >= 1,
-              },
-              {
-                name: 'Loyal Tenant',
-                icon: '✨',
-                description: 'Paid rent for 3+ months total',
-                earned: totalPaid >= 3,
-              },
-              {
-                name: 'Community Star',
-                icon: '🌟',
-                description: 'Registered 3 visitors',
-                earned: false,
-              },
-            ];
-
-            return res.status(200).json({
-              success: true,
-              data: {
-                total_points: totalPoints,
-                earned,
-                redeemed,
-                history,
-                badges,
-              },
-            });
-          }
-        );
-      }
-    );
+      return res.json({
+        success: true,
+        data: {
+          total_points: totalPoints,
+          earned,
+          redeemed,
+          history,
+          badges,
+        }
+      });
+    });
   });
 });
 
 // POST /api/tenant/rewards/redeem
-router.post('/redeem', authenticateTenant, (req, res) => {
+router.post('/redeem', tenantAuth, (req, res) => {
   const tenantId = req.tenant.id;
   const { points, reason } = req.body;
 
-  if (!points || !reason) {
-    return res.status(400).json({ success: false, message: 'points and reason are required.' });
-  }
+  const checkQuery = `SELECT reward_points FROM tenants WHERE id = ?`;
+  db.query(checkQuery, [tenantId], (err, rows) => {
+    if (err) return res.status(500).json({ success: false, message: 'Server error' });
 
-  db.query('SELECT reward_points FROM tenants WHERE id = ?', [tenantId], (err, rows) => {
-    if (err) return res.status(500).json({ success: false, message: 'DB error' });
-
-    const currentPoints = rows[0]?.reward_points || 0;
-
-    if (currentPoints < points) {
-      return res.status(400).json({ success: false, message: `Not enough points. You have ${currentPoints} pts.` });
+    const current = rows[0].reward_points || 0;
+    if (current < points) {
+      return res.json({ success: false, message: 'Not enough points!' });
     }
 
-    db.query(
-      'UPDATE tenants SET reward_points = reward_points - ? WHERE id = ?',
-      [points, tenantId],
-      (err) => {
-        if (err) return res.status(500).json({ success: false, message: 'DB error' });
+    const updateQuery = `UPDATE tenants SET reward_points = reward_points - ? WHERE id = ?`;
+    db.query(updateQuery, [points, tenantId], (err) => {
+      if (err) return res.status(500).json({ success: false, message: 'Server error' });
 
-        db.query(
-          'INSERT INTO reward_history (tenant_id, points, reason, type) VALUES (?, ?, ?, "redeemed")',
-          [tenantId, points, reason],
-          (err) => {
-            if (err) return res.status(500).json({ success: false, message: 'DB error' });
+      const historyQuery = `INSERT INTO reward_history (tenant_id, points, reason, type) VALUES (?, ?, ?, 'redeemed')`;
+      db.query(historyQuery, [tenantId, points, reason], (err) => {
+        if (err) console.error('redeem history error:', err);
+      });
 
-            return res.status(200).json({
-              success: true,
-              message: `Redeemed ${points} points for ${reason}!`,
-              data: { remaining_points: currentPoints - points },
-            });
-          }
-        );
-      }
-    );
+      return res.json({ success: true, message: `${points} points redeemed successfully!` });
+    });
   });
 });
 
-module.exports = { router, addPoints };
+function _getBadges(totalPoints, history) {
+  const onTimeCount = history.filter(h => h.reason && h.reason.includes('on time')).length;
+  const earlyCount = history.filter(h => h.reason && h.reason.includes('early')).length;
+  const bonusCount = history.filter(h => h.reason && h.reason.includes('consecutive')).length;
+
+  return [
+    {
+      name: 'On-Time Payer',
+      icon: '⏰',
+      description: 'Pay rent on time',
+      earned: onTimeCount >= 1,
+    },
+    {
+      name: 'Early Bird',
+      icon: '🐦',
+      description: 'Pay 5+ days early',
+      earned: earlyCount >= 1,
+    },
+    {
+      name: 'Streak Master',
+      icon: '🔥',
+      description: '3 months on time',
+      earned: bonusCount >= 1,
+    },
+    {
+      name: 'Point Collector',
+      icon: '⭐',
+      description: 'Earn 50+ points',
+      earned: totalPoints >= 50,
+    },
+    {
+      name: 'Gold Tenant',
+      icon: '🏆',
+      description: 'Earn 100+ points',
+      earned: totalPoints >= 100,
+    },
+    {
+      name: 'Redeemer',
+      icon: '🎁',
+      description: 'Redeem points once',
+      earned: history.some(h => h.type === 'redeemed'),
+    },
+  ];
+}
+
+module.exports = { router };
