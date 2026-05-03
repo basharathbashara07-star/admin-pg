@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = 'http://192.168.1.11:5000';
+  static const String baseUrl = 'http://192.168.1.8:5000';
   // Login function (existing)
   static Future<Map<String, dynamic>> login(
       String email, String password) async {
@@ -707,6 +707,24 @@ static Future<Map<String, dynamic>> updateVisitorStatus(
       'Content-Type': 'application/json',
     },
     body: jsonEncode({'status': status}),
+  );
+  return jsonDecode(response.body);
+}
+
+// ✅ Predict Rent Payment
+static Future<Map<String, dynamic>> predictRentPayment(String token, String tenantId) async {
+  final response = await http.get(
+    Uri.parse('$baseUrl/api/admin/tenants/$tenantId/predict'),
+    headers: {'Authorization': 'Bearer $token'},
+  );
+  return jsonDecode(response.body);
+}
+
+// ✅ Fetch Notifications
+static Future<Map<String, dynamic>> fetchNotifications(String token) async {
+  final response = await http.get(
+    Uri.parse('$baseUrl/api/admin/notifications'),
+    headers: {'Authorization': 'Bearer $token'},
   );
   return jsonDecode(response.body);
 }

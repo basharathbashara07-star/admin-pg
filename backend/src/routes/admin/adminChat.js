@@ -16,23 +16,23 @@ router.get("/tenants", authenticateAdmin, (req, res) => {
       (
         SELECT message FROM messages 
         WHERE pg_id = ? AND (
-          (sender_type = 'tenant' AND sender_id = t.id) OR
-          (receiver_type = 'tenant' AND receiver_id = t.id)
+          (sender_type = 'tenant' AND sender_id = t.id AND receiver_type = 'admin') OR
+          (sender_type = 'admin' AND receiver_type = 'tenant' AND receiver_id = t.id)
         )
         ORDER BY created_at DESC LIMIT 1
       ) as last_message,
       (
         SELECT created_at FROM messages 
         WHERE pg_id = ? AND (
-          (sender_type = 'tenant' AND sender_id = t.id) OR
-          (receiver_type = 'tenant' AND receiver_id = t.id)
+          (sender_type = 'tenant' AND sender_id = t.id AND receiver_type = 'admin') OR
+          (sender_type = 'admin' AND receiver_type = 'tenant' AND receiver_id = t.id)
         )
         ORDER BY created_at DESC LIMIT 1
       ) as last_message_time,
       (
         SELECT COUNT(*) FROM messages 
         WHERE pg_id = ? AND sender_type = 'tenant' 
-        AND sender_id = t.id AND is_read = 0
+        AND sender_id = t.id AND receiver_type = 'admin' AND is_read = 0
       ) as unread_count
     FROM tenants t
     LEFT JOIN rooms r ON t.room_id = r.id
@@ -54,15 +54,15 @@ router.get("/messages/:tenantId", authenticateAdmin, (req, res) => {
   // Mark tenant messages as read
   db.query(
     `UPDATE messages SET is_read = 1 
-     WHERE pg_id = ? AND sender_type = 'tenant' AND sender_id = ?`,
+     WHERE pg_id = ? AND sender_type = 'tenant' AND sender_id = ? AND receiver_type = 'admin'`,
     [pgId, tenantId]
   );
 
   const query = `
     SELECT * FROM messages 
     WHERE pg_id = ? AND (
-      (sender_type = 'tenant' AND sender_id = ?) OR
-      (receiver_type = 'tenant' AND receiver_id = ?)
+      (sender_type = 'tenant' AND sender_id = ? AND receiver_type = 'admin') OR
+      (sender_type = 'admin' AND receiver_type = 'tenant' AND receiver_id = ?)
     )
     ORDER BY created_at ASC
   `;

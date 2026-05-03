@@ -19,11 +19,13 @@ class _ChatScreenState extends State<ChatScreen> {
   String _token = '';
   List<Map<String, dynamic>> _conversations = [];
   bool _loading = true;
+  late Timer _conversationTimer;
 
   @override
 void initState() {
   super.initState();
   _loadToken();
+  _conversationTimer = Timer.periodic(const Duration(seconds: 2), (_) => _fetchConversations());
 }
 
 Future<void> _loadToken() async {
@@ -51,7 +53,13 @@ Future<void> _loadToken() async {
       setState(() => _loading = false);
     }
   }
-
+     
+  @override
+  void dispose() {
+  _conversationTimer.cancel();
+  super.dispose();
+}
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -156,7 +164,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     super.initState();
     _getMyId();
     _fetchMessages();
-    _timer = Timer.periodic(const Duration(seconds: 5), (_) => _fetchMessages());
+    _timer = Timer.periodic(const Duration(seconds: 2), (_) => _fetchMessages());
   }
 
   void _getMyId() {

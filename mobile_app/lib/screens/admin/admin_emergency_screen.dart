@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import '../../config/api_config.dart';
+import '../../services/api_service.dart';
+import 'package:vibration/vibration.dart';
 
 class AdminEmergencyScreen extends StatefulWidget {
   const AdminEmergencyScreen({super.key});
@@ -39,11 +41,11 @@ class _AdminEmergencyScreenState extends State<AdminEmergencyScreen>
 
   Future<void> _loadToken() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() => _token = prefs.getString('admin_token') ?? '');
+    setState(() => _token = prefs.getString('token') ?? '');
     await _fetchAlerts();
 
     // Poll every 10 seconds for new alerts
-    _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) {
       _fetchAlerts();
     });
   }
@@ -52,7 +54,7 @@ class _AdminEmergencyScreenState extends State<AdminEmergencyScreen>
     if (_token.isEmpty) return;
     try {
       final res = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/emergency/alerts'),
+       Uri.parse('${ApiService.baseUrl}/api/admin/emergency/alerts'),
         headers: {'Authorization': 'Bearer $_token'},
       );
       final data = jsonDecode(res.body);
@@ -65,10 +67,15 @@ class _AdminEmergencyScreenState extends State<AdminEmergencyScreen>
         final hasActive = _alerts.any((a) => a['status'] == 'active');
         if (hasActive && !_alertController.isAnimating) {
           _alertController.repeat(reverse: true);
+          Vibration.hasVibrator().then((hasVibrator) {
+            if (hasVibrator ?? false) {
+              Vibration.vibrate(pattern: [0, 500, 200, 500, 200, 500]);
+            }
+          });
         } else if (!hasActive) {
           _alertController.stop();
           _alertController.reset();
-        }
+        } 
       }
     } catch (e) {
       debugPrint('fetchAlerts error: $e');
@@ -79,7 +86,7 @@ class _AdminEmergencyScreenState extends State<AdminEmergencyScreen>
     setState(() => _isLoading = true);
     try {
       final res = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/emergency/resolve/$alertId'),
+        Uri.parse('${ApiService.baseUrl}/api/admin/emergency/resolve/$alertId'),
         headers: {
           'Authorization': 'Bearer $_token',
           'Content-Type': 'application/json',

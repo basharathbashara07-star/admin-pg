@@ -526,5 +526,113 @@ router.get("/dashboard/summary", authenticateAdmin, (req, res) => {
     return res.json({ success: true, data: results[0] });
   });
 });
-                   
+         
+//PREDICTION
+// GET /api/admin/tenants/:id/predict
+router.get("/tenants/:id/predict", authenticateAdmin, (req, res) => {
+  const tenantId = req.params.id;
+
+  db.query(
+    `SELECT 
+      COUNT(CASE WHEN p.status != 'paid' THEN 1 END) as months_paid_late,
+      COUNT(CASE WHEN p.status = 'overdue' THEN 1 END) as months_skipped,
+      TIMESTAMPDIFF(MONTH, t.check_in_date, CURDATE()) as months_as_tenant,
+      t.rent_amount,
+      COALESCE(AVG(DATEDIFF(p.payment_date, p.due_date)), 0) as avg_days_late
+    FROM tenants t
+    LEFT JOIN payments p ON p.tenant_id = t.id
+    WHERE t.id = ?`,
+    [tenantId],
+    async (err, results) => {
+      if (err) return res.status(500).json({ success: false, message: 'DB error' });
+
+      const data = results[0];
+
+      try {
+        const response = await fetch('http://127.0.0.1:5001/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            months_paid_late: data.months_paid_late || 0,
+            months_skipped: data.months_skipped || 0,
+            months_as_tenant: data.months_as_tenant || 1,
+            rent_amount: parseFloat(data.rent_amount) || 0,
+            avg_days_late: parseFloat(data.avg_days_late) || 0,
+          }),
+        });
+
+        const prediction = await response.json();
+        return res.json({ success: true, prediction });
+      } catch (e) {
+        return res.status(500).json({ success: false, message: 'ML model error' });
+      }
+    }
+  );
+});
+
+// GET /api/admin/notifications
+router.get("/notifications", authenticateAdmin, (req, res) => {
+  const pgId = req.admin.pg_id;
+
+  const sql = `
+    (SELECT 
+      'payment' as type,
+      CONCAT(t.name, ' paid ₹', p.amount, ' for ', p.month) as message,
+      p.created_at as time,
+      t.name as tenant_name
+    FROM payments p
+    JOIN tenants t ON p.tenant_id = t.id
+    WHERE t.pg_id = ? AND p.status = 'paid'
+    ORDER BY p.created_at DESC
+    LIMIT 5)
+
+    UNION ALL
+
+    (SELECT 
+      'overdue' as type,
+      CONCAT(t.name, ' has overdue rent for ', p.month) as message,
+      p.created_at as time,
+      t.name as tenant_name
+    FROM payments p
+    JOIN tenants t ON p.tenant_id = t.id
+    WHERE t.pg_id = ? AND p.status = 'overdue'
+    ORDER BY p.created_at DESC
+    LIMIT 5)
+
+    UNION ALL
+
+    (SELECT 
+      'visitor' as type,
+      CONCAT('Visitor request from ', v.name, ' to visit ', t.name) as message,
+      v.created_at as time,
+      t.name as tenant_name
+    FROM visitors v
+    JOIN tenants t ON v.tenant_id = t.id
+    WHERE v.pg_id = ?
+    ORDER BY v.created_at DESC
+    LIMIT 5)
+
+    UNION ALL
+
+    (SELECT 
+      'maintenance' as type,
+      CONCAT(t.name, ': ', c.title) as message,
+      c.created_at as time,
+      t.name as tenant_name
+    FROM complaints c
+    JOIN tenants t ON c.tenant_id = t.id
+    WHERE t.pg_id = ? AND c.status = 'open'
+    ORDER BY c.created_at DESC
+    LIMIT 5)
+
+    ORDER BY time DESC
+    LIMIT 20
+  `;
+
+  db.query(sql, [pgId, pgId, pgId, pgId], (err, results) => {
+    if (err) return res.status(500).json({ success: false, message: err.message });
+    return res.json({ success: true, notifications: results });
+  });
+});
+
 module.exports = router;

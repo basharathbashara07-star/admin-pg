@@ -35,13 +35,15 @@ class _AdminLoginState extends State<AdminLogin> {
 
   try {
     final response = await http.post(
-      Uri.parse("http://192.168.1.11:5000/api/admin/login"),
+      Uri.parse("http://192.168.1.8:5000/api/admin/login"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         "email": email,
         "password": password,
       }),
     );
+     print("STATUS: ${response.statusCode}");
+     print("BODY: ${response.body}");
 
     final data = jsonDecode(response.body);
 
@@ -85,7 +87,7 @@ class _AdminLoginState extends State<AdminLogin> {
   } catch (e) {
     print(e);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Server error")),
+      SnackBar(content: Text("Error: $e")),
     );
   }
 }

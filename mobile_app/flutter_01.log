@@ -1,0 +1,66 @@
+Flutter crash report.
+Please report a bug at https://github.com/flutter/flutter/issues.
+
+## command
+
+flutter run
+
+## exception
+
+DartDevelopmentServiceException: DartDevelopmentServiceException: Failed to start Dart Development Service
+
+```
+```
+
+## flutter doctor
+
+```
+[32m[✓][39m Flutter (Channel stable, 3.38.6, on Microsoft Windows [Version 10.0.19045.6466], locale en-IN) [2.4s]
+    [32m•[39m Flutter version 3.38.6 on channel stable at C:\Users\asus\Downloads\flutter
+    [32m•[39m Upstream repository https://github.com/flutter/flutter.git
+    [32m•[39m Framework revision 8b87286849 (5 weeks ago), 2026-01-08 10:49:17 -0800
+    [32m•[39m Engine revision 78fc3012e4
+    [32m•[39m Dart version 3.10.7
+    [32m•[39m DevTools version 2.51.1
+    [32m•[39m Feature flags: enable-web, enable-linux-desktop, enable-macos-desktop, enable-windows-desktop,
+      enable-android, enable-ios, cli-animations, enable-native-assets, omit-legacy-version-file,
+      enable-lldb-debugging
+
+[32m[✓][39m Windows Version (10 Pro 64-bit, 22H2, 2009) [10.5s]
+
+[32m[✓][39m Android toolchain - develop for Android devices (Android SDK version 36.1.0) [17.0s]
+    [32m•[39m Android SDK at C:\Users\asus\AppData\Local\Android\Sdk
+    [32m•[39m Emulator version 36.3.10.0 (build_id 14472402) (CL:N/A)
+    [32m•[39m Platform android-36, build-tools 36.1.0
+    [32m•[39m ANDROID_SDK_ROOT = C:\Users\asus\AppData\Local\Android\Sdk
+    [32m•[39m Java binary at: C:\Program Files\Android\Android Studio\jbr\bin\java
+      This is the JDK bundled with the latest Android Studio installation on this machine.
+      To manually set the JDK path, use: `flutter config --jdk-dir="path/to/jdk"`.
+    [32m•[39m Java version OpenJDK Runtime Environment (build 21.0.8+-14196175-b1038.72)
+    [32m•[39m All Android licenses accepted.
+
+[31m[✗][39m Chrome - develop for the web (Cannot find Chrome executable at .\Google\Chrome\Application\chrome.exe)
+    [957ms]
+    [33m![39m Cannot find Chrome. Try setting CHROME_EXECUTABLE to a Chrome executable.
+
+[33m[!][39m Visual Studio - develop Windows apps (Visual Studio Build Tools 2019 16.11.44) [954ms]
+    [32m•[39m Visual Studio at C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools
+    [32m•[39m Visual Studio Build Tools 2019 version 16.11.35731.53
+    [31m✗[39m The current Visual Studio installation is incomplete.
+      Please use Visual Studio Installer to complete the installation or reinstall Visual Studio.
+
+[32m[✓][39m Connected device (3 available) [3.4s]
+    [32m•[39m moto g35 5G (mobile) • ZA222ZRLT8 • android-arm64  • Android 14 (API 34)
+    [32m•[39m Windows (desktop)    • windows    • windows-x64    • Microsoft Windows [Version 10.0.19045.6466]
+    [32m•[39m Edge (web)           • edge       • web-javascript • Microsoft Edge 145.0.3800.58
+
+[33m[!][39m Network resources [3.6s]
+    [31m✗[39m A cryptographic error occurred while checking "https://storage.googleapis.com/": Handshake error in client
+      You may be experiencing a man-in-the-middle attack, your network may be compromised, or you may have
+      malware installed on your computer.
+    [31m✗[39m A cryptographic error occurred while checking "https://github.com/": Handshake error in client
+      You may be experiencing a man-in-the-middle attack, your network may be compromised, or you may have
+      malware installed on your computer.
+
+[33m![39m Doctor found issues in 3 categories.
+```

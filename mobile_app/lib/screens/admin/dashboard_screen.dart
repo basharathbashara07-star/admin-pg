@@ -17,6 +17,7 @@ import '../../main.dart';
 import 'dart:async';
 import 'admin_emergency_screen.dart';
 import 'admin_rewards_screen.dart';
+import 'notifications_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -145,32 +146,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
             );
           },
         ),
-        Container(
-          width: 40,
-          height: 40,
-          margin: const EdgeInsets.only(right: 16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
-          ),
-          child: Stack(
-            children: [
-              const Center(
-                child: Icon(Icons.notifications_rounded, color: Color(0xFF2196F3), size: 22),
-              ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                ),
-              ),
-            ],
+
+               GestureDetector(
+  onTap: () => Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+  ),
+  child: Container(
+    width: 40,
+    height: 40,
+    margin: const EdgeInsets.only(right: 16),
+    decoration: BoxDecoration(
+      color: Theme.of(context).cardColor,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
+    ),
+    child: Stack(
+      children: [
+        const Center(
+          child: Icon(Icons.notifications_rounded, color: Color(0xFF2196F3), size: 22),
+        ),
+        Positioned(
+          top: 8,
+          right: 8,
+          child: Container(
+            width: 8,
+            height: 8,
+            decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
           ),
         ),
+      ],
+    ),
+  ),
+),
       ],
     );
   }
@@ -325,34 +333,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 12),
 
           // ── Emergency Button ──
-          GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminEmergencyScreen())),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFEE2E2),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFFCA5A5)),
-                boxShadow: [BoxShadow(color: Colors.red.withOpacity(0.08), blurRadius: 8)],
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.crisis_alert, color: Color(0xFFDC2626), size: 24),
-                  SizedBox(width: 10),
-                  Text(
-                    'Emergency Alerts',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFFDC2626),
-                    ),
-                  ),
-                ],
+ValueListenableBuilder<bool>(
+  valueListenable: sosActiveNotifier,
+  builder: (_, sosActive, __) {
+    return GestureDetector(
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminEmergencyScreen())),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        decoration: BoxDecoration(
+          color: sosActive ? const Color(0xFFDC2626) : const Color(0xFFFEE2E2),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: sosActive ? Colors.red : const Color(0xFFFCA5A5)),
+          boxShadow: [BoxShadow(color: Colors.red.withOpacity(sosActive ? 0.4 : 0.08), blurRadius: sosActive ? 20 : 8)],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.crisis_alert, color: sosActive ? Colors.white : const Color(0xFFDC2626), size: 24),
+            const SizedBox(width: 10),
+            Text(
+              sosActive ? '🚨 EMERGENCY ACTIVE!' : 'Emergency Alerts',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: sosActive ? Colors.white : const Color(0xFFDC2626),
               ),
             ),
-          ),
+            if (sosActive) ...[
+              const SizedBox(width: 8),
+              const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 14),
+            ],
+          ],
+        ),
+      ),
+    );
+  },
+),
           const SizedBox(height: 12),
 
           // ── Rewards Button ──
