@@ -158,8 +158,9 @@ class _EmergencyScreenState extends State<EmergencyScreen>
 
   @override
   Widget build(BuildContext context) {
-    final bgColor =
-        _sosActivated ? const Color(0xFFFEF2F2) : AppTheme.bgLight;
+  final bgColor = _sosActivated 
+    ? const Color(0xFFFEF2F2) 
+    : AppTheme.bg(context);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -207,18 +208,21 @@ class _EmergencyScreenState extends State<EmergencyScreen>
               ],
 
               const SizedBox(height: 24),
-              const Text(
+
+               Text(
                 'Need Help?',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
-                  color: AppTheme.textDark,
+                  color: AppTheme.text(context),
                 ),
               ),
+
               const SizedBox(height: 8),
-              const Text(
-                'Press the SOS button below to immediately alert the warden.',
-                style: TextStyle(fontSize: 14, color: AppTheme.textMid),
+
+              Text('Press the SOS button below to immediately alert the warden.',
+               style: TextStyle(fontSize: 14, color: AppTheme.textSecondary(context)),
+
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 56),
@@ -291,16 +295,17 @@ class _EmergencyScreenState extends State<EmergencyScreen>
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    icon: const Icon(Icons.cancel_outlined,
-                        color: AppTheme.textMid),
-                    label: const Text(
+
+                    icon: Icon(Icons.cancel_outlined,
+                        color: AppTheme.textSecondary(context)),
+                    label: Text(
                       'Cancel Alert',
                       style: TextStyle(
-                          color: AppTheme.textMid, fontWeight: FontWeight.w600),
+                          color: AppTheme.textSecondary(context), fontWeight: FontWeight.w600),
                     ),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: const BorderSide(color: AppTheme.textMid),
+                      side: BorderSide(color: AppTheme.textSecondary(context)),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                     ),
@@ -316,13 +321,11 @@ class _EmergencyScreenState extends State<EmergencyScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      '📋 Emergency Tips',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                          color: AppTheme.textDark),
-                    ),
+
+                    Text('📋 Emergency Tips', 
+                    style: TextStyle(fontWeight: FontWeight.w700, 
+                    fontSize: 15, color: AppTheme.text(context))),
+
                     const SizedBox(height: 12),
                     _buildTip('Stay calm and move to a safe area'),
                     _buildTip('Do not open doors if you smell smoke'),
@@ -351,7 +354,7 @@ class _EmergencyScreenState extends State<EmergencyScreen>
           Expanded(
             child: Text(tip,
                 style:
-                    const TextStyle(fontSize: 13, color: AppTheme.textMid)),
+                    TextStyle(fontSize: 13, color: AppTheme.textSecondary(context))),
           ),
         ],
       ),

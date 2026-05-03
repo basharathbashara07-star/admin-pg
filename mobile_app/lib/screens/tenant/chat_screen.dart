@@ -7,6 +7,8 @@ import '../../widgets/tenant/tenant_common_widgets.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:mobile_app/config/api_config.dart';
 import 'dart:async';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 
 class ChatScreen extends StatefulWidget {
@@ -20,6 +22,7 @@ class _ChatScreenState extends State<ChatScreen> {
   List<Map<String, dynamic>> _conversations = [];
   bool _loading = true;
   late Timer _conversationTimer;
+  
 
   @override
 void initState() {
@@ -63,7 +66,7 @@ Future<void> _loadToken() async {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgLight,
+      backgroundColor: AppTheme.bg(context),
       appBar: AppBar(
         title: const Text('Messages'),
         automaticallyImplyLeading: true,
@@ -88,7 +91,7 @@ Future<void> _loadToken() async {
                       ),
                       title: Row(
                         children: [
-                          Text(c['name'], style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: AppTheme.textDark)),
+                          Text(c['name'], style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: AppTheme.text(context))),
                           if (isAdmin) ...[
                             const SizedBox(width: 6),
                             Container(
@@ -157,6 +160,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   bool _loading = true;
   int? _myId;
   late Timer _timer;
+  final ImagePicker _picker = ImagePicker();
   
 
   @override
@@ -261,6 +265,32 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     }
   }
   
+  Future<void> _sendImage() async {
+  final XFile? image = await _picker.pickImage(
+    source: ImageSource.gallery,
+    imageQuality: 70,
+  );
+  if (image == null) return;
+
+  try {
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('${ApiConfig.baseUrl}/chat/messages/image'),
+    );
+    request.headers['Authorization'] = 'Bearer ${widget.token}';
+    request.fields['receiver_id'] = widget.receiverId.toString();
+    request.fields['receiver_type'] = widget.receiverType;
+    request.files.add(await http.MultipartFile.fromPath('image', image.path));
+
+    final response = await request.send();
+    if (response.statusCode == 201) {
+      await _fetchMessages();
+    }
+  } catch (e) {
+    debugPrint('sendImage error: $e');
+  }
+}
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -285,7 +315,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgLight,
+      backgroundColor: AppTheme.bg(context),
       appBar: AppBar(
         titleSpacing: 0,
         title: Row(
@@ -295,9 +325,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(widget.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                Text(widget.receiverType == 'admin' ? 'Admin / Warden' : 'Roommate',
-                    style: const TextStyle(fontSize: 11, color: AppTheme.textMid)),
+
+               Text(widget.name, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.text(context))),
+               Text(widget.receiverType == 'admin' ? 'Admin / Warden' : 'Roommate',
+               style: TextStyle(fontSize: 11, color: AppTheme.textSecondary(context))), 
+
               ],
             ),
           ],
@@ -317,17 +349,17 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                         itemBuilder: (_, i) {
                           final m   = _messages[i];
                           final isMe = m['sender_id'] == _myId && m['sender_type'] == 'tenant';
-                          return _buildBubble(m['message'], isMe, m['created_at']);
+                          return _buildBubble(m, isMe, m['created_at']);
                         },
                       ),
           ),
           // Input
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(top: BorderSide(color: AppTheme.border)),
-            ),
+            decoration: BoxDecoration(
+  color: AppTheme.card(context),
+  border: Border(top: BorderSide(color: AppTheme.borderColor(context))),
+),
             child: Row(
               children: [
                 Expanded(
@@ -339,19 +371,28 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                       hintText: 'Type a message...',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: AppTheme.border)),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      filled: true, fillColor: AppTheme.bgLight,
+                      filled: true, fillColor: AppTheme.bg(context),
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: _sendMessage,
-                  child: Container(
-                    width: 44, height: 44,
-                    decoration: BoxDecoration(color: AppTheme.primary, borderRadius: BorderRadius.circular(22)),
-                    child: const Icon(Icons.send, color: Colors.white, size: 20),
-                  ),
-                ),
+     const SizedBox(width: 8),
+GestureDetector(
+  onTap: _sendImage,
+  child: Container(
+    width: 44, height: 44,
+    decoration: BoxDecoration(color: AppTheme.secondary, borderRadius: BorderRadius.circular(22)),
+    child: const Icon(Icons.image, color: Colors.white, size: 20),
+  ),
+),
+const SizedBox(width: 8),
+GestureDetector(
+  onTap: _sendMessage,
+  child: Container(
+    width: 44, height: 44,
+    decoration: BoxDecoration(color: AppTheme.primary, borderRadius: BorderRadius.circular(22)),
+    child: const Icon(Icons.send, color: Colors.white, size: 20),
+  ),
+),
               ],
             ),
           ),
@@ -360,7 +401,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     );
   }
 
-  Widget _buildBubble(String message, bool isMe, dynamic time) {
+Widget _buildBubble(Map<String, dynamic> m, bool isMe, dynamic time) {
+  final message = m['message'] ?? '';
+  final imageUrl = m['image_url'] ?? '';
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -368,7 +411,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.72),
         decoration: BoxDecoration(
-          color: isMe ? AppTheme.primary : Colors.white,
+          color: isMe ? AppTheme.primary : AppTheme.card(context),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
@@ -377,8 +420,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           ),
           boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
         ),
-        child: Text(message, style: TextStyle(color: isMe ? Colors.white : AppTheme.textDark, fontSize: 14)),
-      ),
+        child: imageUrl.isNotEmpty
+    ? ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(imageUrl, width: 200, fit: BoxFit.cover),
+      )
+    : Text(message, style: TextStyle(color: isMe ? Colors.white : AppTheme.text(context), fontSize: 14)),
+
+      ),  
     );
   }
 }

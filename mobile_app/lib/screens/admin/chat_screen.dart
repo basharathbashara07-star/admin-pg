@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/api_service.dart';
 import 'dart:async';
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 
 class ChatScreen extends StatefulWidget {
   final int tenantId;
@@ -27,6 +29,7 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isSending = false;
   String _token = '';
   late Timer _timer;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -74,6 +77,31 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+       Future<void> _sendImage() async {
+  final XFile? image = await _picker.pickImage(
+    source: ImageSource.gallery,
+    imageQuality: 70,
+  );
+  if (image == null) return;
+
+  try {
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('${ApiService.baseUrl}/api/admin/chat/send/image'),
+    );
+    request.headers['Authorization'] = 'Bearer $_token';
+    request.fields['tenant_id'] = widget.tenantId.toString();
+    request.files.add(await http.MultipartFile.fromPath('image', image.path));
+
+    final response = await request.send();
+    if (response.statusCode == 200) {
+      await _fetchMessages();
+    }
+  } catch (e) {
+    debugPrint('sendImage error: $e');
+  }
+}
+  
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -164,8 +192,9 @@ class _ChatScreenState extends State<ChatScreen> {
                         itemBuilder: (context, index) {
                           final msg = _messages[index];
                           final isAdmin = msg['sender_type'] == 'admin';
-                          return _buildBubble(msg['message'], isAdmin,
-                              _formatTime(msg['created_at']));
+                         return _buildBubble(msg, isAdmin,
+                       _formatTime(msg['created_at']));
+
                         },
                       ),
           ),
@@ -175,7 +204,9 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildBubble(String message, bool isAdmin, String time) {
+  Widget _buildBubble(Map<String, dynamic> msg, bool isAdmin, String time) {
+  final message = msg['message'] ?? '';
+  final imageUrl = msg['image_url'] ?? '';
     return Align(
       alignment: isAdmin ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -200,13 +231,25 @@ class _ChatScreenState extends State<ChatScreen> {
           crossAxisAlignment:
               isAdmin ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
-            Text(
-              message,
-              style: TextStyle(
-                color: isAdmin ? Colors.white : Theme.of(context).colorScheme.onSurface,
-                fontSize: 14,
-              ),
-            ),
+
+
+
+            imageUrl.isNotEmpty
+    ? ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(imageUrl, width: 200, fit: BoxFit.cover),
+      )
+    : Text(
+        message,
+        style: TextStyle(
+          color: isAdmin ? Colors.white : Theme.of(context).colorScheme.onSurface,
+          fontSize: 14,
+        ),
+      ),
+
+
+
+            
             const SizedBox(height: 4),
             Text(
               time,
@@ -251,16 +294,32 @@ class _ChatScreenState extends State<ChatScreen> {
               onSubmitted: (_) => _sendMessage(),
             ),
           ),
+
+
+
           const SizedBox(width: 8),
-          GestureDetector(
-            onTap: _sendMessage,
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: const BoxDecoration(
-                color: Color(0xFF2196F3),
-                shape: BoxShape.circle,
-              ),
+GestureDetector(
+  onTap: _sendImage,
+  child: Container(
+    width: 44,
+    height: 44,
+    decoration: const BoxDecoration(
+      color: Color(0xFF4CAF50),
+      shape: BoxShape.circle,
+    ),
+    child: const Icon(Icons.image, color: Colors.white, size: 20),
+  ),
+),
+const SizedBox(width: 8),
+GestureDetector(
+  onTap: _sendMessage,
+  child: Container(
+    width: 44,
+    height: 44,
+    decoration: const BoxDecoration(
+      color: Color(0xFF2196F3),
+      shape: BoxShape.circle,
+    ),
               child: _isSending
                   ? const Padding(
                       padding: EdgeInsets.all(10),

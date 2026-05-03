@@ -635,4 +635,53 @@ router.get("/notifications", authenticateAdmin, (req, res) => {
   });
 });
 
+// GET /api/admin/recent-activity
+router.get("/recent-activity", authenticateAdmin, (req, res) => {
+  const pgId = req.admin.pg_id;
+
+  const sql = `
+    (SELECT 
+      'payment' as type,
+      CONCAT(t.name, ' paid ₹', p.amount, ' for ', p.month) as message,
+      p.created_at as time
+    FROM payments p
+    JOIN tenants t ON p.tenant_id = t.id
+    WHERE t.pg_id = ? AND p.status = 'paid'
+    AND p.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+    ORDER BY p.created_at DESC LIMIT 5)
+
+    UNION ALL
+
+    (SELECT 
+      'visitor' as type,
+      CONCAT('Visitor request: ', v.name, ' visiting ', t.name) as message,
+      v.created_at as time
+    FROM visitors v
+    JOIN tenants t ON v.tenant_id = t.id
+    WHERE v.pg_id = ?
+    AND v.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+    ORDER BY v.created_at DESC LIMIT 5)
+
+    UNION ALL
+
+    (SELECT 
+      'maintenance' as type,
+      CONCAT(t.name, ': ', c.title) as message,
+      c.created_at as time
+    FROM complaints c
+    JOIN tenants t ON c.tenant_id = t.id
+    WHERE t.pg_id = ? AND c.status = 'open'
+    AND c.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+    ORDER BY c.created_at DESC LIMIT 5)
+
+    ORDER BY time DESC
+    LIMIT 10
+  `;
+
+  db.query(sql, [pgId, pgId, pgId], (err, results) => {
+    if (err) return res.status(500).json({ success: false, message: err.message });
+    return res.json({ success: true, activities: results });
+  });
+});
+
 module.exports = router;

@@ -34,6 +34,7 @@ const adminEmergencyRoutes = require("./routes/admin/emergencyRoutes");
 // middleware
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static('src/uploads'));
 
 // ADMIN routes
 app.use("/api/admin", adminAuthRoutes);

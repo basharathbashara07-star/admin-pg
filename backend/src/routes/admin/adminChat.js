@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../../config/db");
+const upload = require('../../../middleware/upload');
 const authenticateAdmin = require("../../../middleware/auth");
 
 // GET /api/admin/chat/tenants - Get all active tenants with unread count
@@ -87,6 +88,29 @@ router.post("/send", authenticateAdmin, (req, res) => {
   db.query(query, [pgId, adminId, tenant_id, message], (err, result) => {
     if (err) return res.status(500).json({ success: false, message: err.message });
     return res.json({ success: true, message_id: result.insertId });
+  });
+});
+
+// POST /api/admin/chat/send/image - Send image to tenant
+router.post("/send/image", authenticateAdmin, upload.single('image'), (req, res) => {
+  const pgId = req.admin.pg_id;
+  const adminId = req.admin.id;
+  const { tenant_id } = req.body;
+
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'No image uploaded.' });
+  }
+
+  const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+
+  const query = `
+    INSERT INTO messages (pg_id, sender_id, sender_type, receiver_id, receiver_type, message, image_url)
+    VALUES (?, ?, 'admin', ?, 'tenant', '', ?)
+  `;
+
+  db.query(query, [pgId, adminId, tenant_id, imageUrl], (err, result) => {
+    if (err) return res.status(500).json({ success: false, message: err.message });
+    return res.json({ success: true, message_id: result.insertId, image_url: imageUrl });
   });
 });
 

@@ -643,6 +643,21 @@ static Future<Map<String, dynamic>> sendMessage(String token, int tenantId, Stri
   return jsonDecode(response.body);
 }
 
+
+// ✅ Send Image to Tenant
+static Future<bool> sendImageToTenant(String token, int tenantId, String imagePath) async {
+  final request = http.MultipartRequest(
+    'POST',
+    Uri.parse('$baseUrl/api/admin/chat/send/image'),
+  );
+  request.headers['Authorization'] = 'Bearer $token';
+  request.fields['tenant_id'] = tenantId.toString();
+  request.files.add(await http.MultipartFile.fromPath('image', imagePath));
+
+  final response = await request.send();
+  return response.statusCode == 200;
+}
+
 // ✅ Fetch All Rooms Floor Wise
 static Future<Map<String, dynamic>> fetchAllRooms(String token) async {
   final response = await http.get(
@@ -729,4 +744,12 @@ static Future<Map<String, dynamic>> fetchNotifications(String token) async {
   return jsonDecode(response.body);
 }
 
+// ✅ Fetch Recent Activity
+static Future<Map<String, dynamic>> fetchRecentActivity(String token) async {
+  final response = await http.get(
+    Uri.parse('$baseUrl/api/admin/recent-activity'),
+    headers: {'Authorization': 'Bearer $token'},
+  );
+  return jsonDecode(response.body);
+}
 }

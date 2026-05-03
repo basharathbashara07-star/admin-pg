@@ -2,19 +2,18 @@ const express = require('express');
 const router = express.Router();
 const authenticateTenant = require('../../../middleware/tenantAuth');
 const db = require('../../config/db');
+const upload = require('../../../middleware/upload');
 
 router.get('/conversations', authenticateTenant, (req, res) => {
   const tenantId = req.tenant.id;
   const pgId = req.tenant.pg_id;
 
-  // Get admin
   db.query(
     `SELECT id, name, 'admin' as type FROM admins WHERE pg_id = ?`,
     [pgId],
     (err, admins) => {
       if (err) return res.status(500).json({ success: false, message: 'DB error' });
 
-      // Get roommates
       db.query(
         `SELECT id, name, 'tenant' as type FROM tenants WHERE pg_id = ? AND id != ? AND status = 'active'`,
         [pgId, tenantId],
@@ -84,7 +83,6 @@ router.get('/messages/:receiverId', authenticateTenant, (req, res) => {
     (err, messages) => {
       if (err) return res.status(500).json({ success: false, message: 'DB error' });
 
-      // Mark as read
       db.query(
         `UPDATE messages SET is_read = 1 
          WHERE sender_id = ? AND sender_type = ? AND receiver_id = ? AND receiver_type = 'tenant'`,
@@ -96,6 +94,7 @@ router.get('/messages/:receiverId', authenticateTenant, (req, res) => {
   );
 });
 
+// POST text message
 router.post('/messages', authenticateTenant, (req, res) => {
   const tenantId = req.tenant.id;
   const pgId = req.tenant.pg_id;
@@ -121,6 +120,42 @@ router.post('/messages', authenticateTenant, (req, res) => {
           receiver_id,
           receiver_type,
           message,
+          created_at: new Date()
+        }
+      });
+    }
+  );
+});
+
+// POST image message
+router.post('/messages/image', authenticateTenant, upload.single('image'), (req, res) => {
+  const tenantId = req.tenant.id;
+  const pgId = req.tenant.pg_id;
+  const { receiver_id, receiver_type } = req.body;
+
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'No image uploaded.' });
+  }
+
+  const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+
+  db.query(
+    `INSERT INTO messages (sender_id, sender_type, receiver_id, receiver_type, pg_id, message, image_url)
+     VALUES (?, 'tenant', ?, ?, ?, '', ?)`,
+    [tenantId, receiver_id, receiver_type, pgId, imageUrl],
+    (err, result) => {
+      if (err) return res.status(500).json({ success: false, message: 'DB error' });
+
+      return res.status(201).json({
+        success: true,
+        data: {
+          id: result.insertId,
+          sender_id: tenantId,
+          sender_type: 'tenant',
+          receiver_id,
+          receiver_type,
+          message: '',
+          image_url: imageUrl,
           created_at: new Date()
         }
       });

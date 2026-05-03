@@ -35,6 +35,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String _pendingRent = '₹0';
   String _openTickets = '0';
   late Timer _timer;
+  int _notificationCount = 0;
 
   @override
   void initState() {
@@ -52,7 +53,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _pgName = prefs.getString('pg_name') ?? 'PG';
     });
     await _fetchDashboardData();
+    await _fetchNotificationCount();
   }
+       
+   Future<void> _fetchNotificationCount() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
+    final data = await ApiService.fetchNotifications(token);
+    if (data['success'] == true) {
+      setState(() {
+        _notificationCount = (data['notifications'] as List).length;
+      });
+    }
+  } catch (e) {}
+}
 
   Future<void> _fetchDashboardData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -148,10 +163,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
 
                GestureDetector(
-  onTap: () => Navigator.push(
+  onTap: () async {
+  await Navigator.push(
     context,
     MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-  ),
+  );
+  // Reset count when returning from notifications
+  setState(() {
+    _notificationCount = 0;
+  });
+},
   child: Container(
     width: 40,
     height: 40,
@@ -166,15 +187,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const Center(
           child: Icon(Icons.notifications_rounded, color: Color(0xFF2196F3), size: 22),
         ),
-        Positioned(
-          top: 8,
-          right: 8,
-          child: Container(
-            width: 8,
-            height: 8,
-            decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-          ),
+        
+
+        if (_notificationCount > 0)
+  Positioned(
+    top: 4,
+    right: 4,
+    child: Container(
+      padding: const EdgeInsets.all(3),
+      decoration: const BoxDecoration(
+        color: Colors.red,
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        _notificationCount > 9 ? '9+' : '$_notificationCount',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
         ),
+      ),
+    ),
+  ),
       ],
     ),
   ),

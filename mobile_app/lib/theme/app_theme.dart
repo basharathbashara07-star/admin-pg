@@ -14,6 +14,29 @@ class AppTheme {
   static const Color textLight = Color(0xFF94A3B8);
   static const Color border = Color(0xFFE2E8F0);
 
+  // Dark mode colors
+  static const Color bgDark = Color(0xFF0F172A);
+  static const Color bgDarkCard = Color(0xFF1E293B);
+  static const Color borderDark = Color(0xFF334155);
+  static const Color textDarkMode = Color(0xFFF1F5F9);
+  static const Color textMidDark = Color(0xFF94A3B8);
+
+  // ── Helper methods ──
+  static Color bg(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? bgDark : bgLight;
+
+  static Color card(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? bgDarkCard : Colors.white;
+
+  static Color text(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? textDarkMode : textDark;
+
+  static Color textSecondary(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? textMidDark : textMid;
+
+  static Color borderColor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? borderDark : border;
+
   // ✅ LIGHT THEME
   static ThemeData get lightTheme => ThemeData(
         useMaterial3: true,
@@ -33,16 +56,27 @@ class AppTheme {
             fontWeight: FontWeight.w700,
           ),
         ),
-      ); // 🔥 THIS WAS MISSING
+      );
 
- 
   static ThemeData get darkTheme => ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
           seedColor: primary,
           brightness: Brightness.dark,
         ),
-        scaffoldBackgroundColor: const Color(0xFF0F172A),
+        scaffoldBackgroundColor: bgDark,
         fontFamily: 'Roboto',
+        appBarTheme: const AppBarTheme(
+          backgroundColor: bgDarkCard,
+          elevation: 0,
+          iconTheme: IconThemeData(color: textDarkMode),
+          titleTextStyle: TextStyle(
+            color: textDarkMode,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        cardColor: bgDarkCard,
+        dividerColor: borderDark,
       );
 }

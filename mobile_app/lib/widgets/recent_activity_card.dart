@@ -1,38 +1,78 @@
 import 'package:flutter/material.dart';
-import '../models/models.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/api_service.dart';
 
-class RecentActivityCard extends StatelessWidget {
+class RecentActivityCard extends StatefulWidget {
   const RecentActivityCard({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final activities = [
-      ActivityItem(
-        icon: Icons.receipt_rounded,
-        iconBg: const Color(0xFFFFC107),
-        title: 'John Doe paid the rent',
-        time: '10 min',
-      ),
-      ActivityItem(
-        icon: Icons.warning_rounded,
-        iconBg: const Color(0xFFF44336),
-        title: 'New maintenance request added',
-        time: '2 hours',
-      ),
-      ActivityItem(
-        icon: Icons.person_add_rounded,
-        iconBg: const Color(0xFF2196F3),
-        title: 'Visitor added by you',
-        time: '1 day',
-      ),
-      ActivityItem(
-        icon: Icons.campaign_rounded,
-        iconBg: const Color(0xFF2196F3),
-        title: 'New notice posted',
-        time: '3 days',
-      ),
-    ];
+  State<RecentActivityCard> createState() => _RecentActivityCardState();
+}
 
+class _RecentActivityCardState extends State<RecentActivityCard> {
+  bool _isLoading = true;
+  List<dynamic> _activities = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchActivities();
+  }
+
+  Future<void> _fetchActivities() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+      final data = await ApiService.fetchRecentActivity(token);
+      if (data['success'] == true) {
+        setState(() {
+          _activities = (data['activities'] as List).take(5).toList();
+          _isLoading = false;
+        });
+      } else {
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  IconData _getIcon(String type) {
+    switch (type) {
+      case 'payment': return Icons.receipt_rounded;
+      case 'overdue': return Icons.warning_rounded;
+      case 'visitor': return Icons.person_add_rounded;
+      case 'maintenance': return Icons.build_rounded;
+      default: return Icons.notifications_rounded;
+    }
+  }
+
+  Color _getIconBg(String type) {
+    switch (type) {
+      case 'payment': return const Color(0xFF4CAF50);
+      case 'overdue': return const Color(0xFFF44336);
+      case 'visitor': return const Color(0xFF2196F3);
+      case 'maintenance': return const Color(0xFFFF9800);
+      default: return const Color(0xFF2196F3);
+    }
+  }
+
+  String _formatTime(String? timeStr) {
+    if (timeStr == null) return '';
+    try {
+      final dt = DateTime.parse(timeStr).toLocal();
+      final now = DateTime.now();
+      final diff = now.difference(dt);
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+      if (diff.inHours < 24) return '${diff.inHours}h';
+      return '${diff.inDays}d';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -59,27 +99,31 @@ class RecentActivityCard extends StatelessWidget {
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
-              GestureDetector(
-                onTap: () {},
-                child: const Text(
-                  'View All',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF2196F3),
-                    fontWeight: FontWeight.w500,
-                  ),
+              const Text(
+                'View All',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF2196F3),
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          ...activities.map((a) => _buildActivityRow(context, a)),
+          if (_isLoading)
+            const Center(child: CircularProgressIndicator(strokeWidth: 2))
+          else if (_activities.isEmpty)
+            const Text('No recent activity',
+                style: TextStyle(color: Colors.grey))
+          else
+            ..._activities.map((a) => _buildActivityRow(context, a)),
         ],
       ),
     );
   }
 
-  Widget _buildActivityRow(BuildContext context, ActivityItem item) {
+  Widget _buildActivityRow(BuildContext context, dynamic item) {
+    final type = item['type'] ?? '';
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -88,23 +132,23 @@ class RecentActivityCard extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: item.iconBg,
+              color: _getIconBg(type),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(item.icon, color: Colors.white, size: 20),
+            child: Icon(_getIcon(type), color: Colors.white, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              item.title,
+              item['message'] ?? '',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 13,
                 color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),
           Text(
-            item.time,
+            _formatTime(item['time']?.toString()),
             style: const TextStyle(
               fontSize: 12,
               color: Color(0xFF9E9E9E),
